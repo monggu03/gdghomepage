@@ -1,6 +1,7 @@
 import { memo, useLayoutEffect, useRef, useState } from 'react'
 import type { Place, PlaceId } from '@/domain/types'
 import { useFontsReady } from '@/hooks/useFontsReady'
+import { placeColor } from '@/config/places'
 import { iso, type Point3 } from '@/lib/iso'
 import s from './campus.module.css'
 
@@ -11,6 +12,8 @@ interface Props {
   scale: number
   /** 화면 오른쪽 장소는 이름표를 왼쪽으로 돌린다 (폰에서 잘리지 않게) */
   flip: boolean
+  /** '진행 중' 표시를 보일지 (폰에서는 이름표가 겹치지 않게 뺀다) */
+  showLive: boolean
   selected: boolean
   lifted: boolean
   dim: boolean
@@ -26,7 +29,7 @@ const MARKER = 'M0 14 C-9 2 -12 -3 -12 -9 A12 12 0 1 1 12 -9 C12 -3 9 2 0 14Z'
  * 이름표 핀. 가만히 있다가 건물이나 핀에 마우스를 올리면 살짝 올라온다.
  * 글자 폭은 실제로 그려 봐야 알 수 있어서, 그린 직후(useLayoutEffect)와 글꼴을 다 받은 뒤 다시 잰다.
  */
-export const Pin = memo(function Pin({ place, at, scale, flip, selected, lifted, dim, count, onSelect, onHover }: Props) {
+export const Pin = memo(function Pin({ place, at, scale, flip, showLive, selected, lifted, dim, count, onSelect, onHover }: Props) {
   const fontsReady = useFontsReady()
   const textRef = useRef<SVGTextElement>(null)
   const liveRef = useRef<SVGTextElement>(null)
@@ -39,8 +42,9 @@ export const Pin = memo(function Pin({ place, at, scale, flip, selected, lifted,
   }, [fontsReady, place.label])
 
   const [px, py] = iso(at[0], at[1], at[2] ?? 0)
-  const color = place.id === 'about' ? 'var(--ink)' : place.color
-  const width = tw + 24 + (place.live ? lw + 6 : 0)
+  const color = placeColor(place.id)
+  const live = place.live && showLive
+  const width = tw + 24 + (live ? lw + 6 : 0)
   const cx = flip ? -18 - width : 18
   const dy = flip ? -14 : 0
   const cls = [s.pin, selected && s.pinSel, lifted && s.pinLift, dim && s.dim].filter(Boolean).join(' ')
@@ -62,7 +66,7 @@ export const Pin = memo(function Pin({ place, at, scale, flip, selected, lifted,
           <text ref={textRef} className={s.chipText} x={cx + 12} y={-4.5 + dy}>
             {place.label}
           </text>
-          {place.live && (
+          {live && (
             <g transform={`translate(${(cx + 12 + tw + 8).toFixed(1)},${dy})`}>
               <rect className={s.liveBg} x={0} y={-18} rx={9} height={18} width={lw} />
               <circle className={s.liveDot} cx={9} cy={-9} r={3} />

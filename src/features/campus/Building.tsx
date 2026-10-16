@@ -3,6 +3,7 @@ import type { Face, Footprint, Place, PlaceId } from '@/domain/types'
 import { shade, type Point3 } from '@/lib/iso'
 import { FLOOR } from './geometry'
 import { Box, IsoLine, Poly } from './primitives'
+import { PLACE_PANEL_ID } from '../hud/shared'
 import { ROOFS } from './roofs'
 import { GLASS_L, GLASS_R } from './roofs/types'
 import s from './campus.module.css'
@@ -76,7 +77,8 @@ export const Building = memo(function Building({ place, fp, selected, hovered, h
       tabIndex={0}
       role="button"
       aria-label={`${place.label} 미리보기 열기`}
-      aria-pressed={selected}
+      aria-current={selected ? 'true' : undefined}
+      aria-controls={PLACE_PANEL_ID}
       onClick={() => onSelect(place.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

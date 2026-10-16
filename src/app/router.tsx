@@ -1,21 +1,22 @@
 import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-router-dom'
+import { PAGE_PLAN_IDS } from '@/config/pages'
 import { HomePage } from '@/features/home/HomePage'
 import { AppLayout } from '@/features/layout/AppLayout'
+import { ErrorPage } from '@/features/pages/ErrorPage'
 import { NotFoundPage, PlannedPage } from '@/features/pages/PlannedPage'
 
-/** 메뉴 = 배범서 기획의 상단 메뉴 (Home · Projects · Teams · Community · Recruits) + 관리자 */
+/** 다 만든 페이지. 준비 중 페이지를 실제로 만들면 여기로 옮긴다 */
+const BUILT_ROUTES: RouteObject[] = [{ index: true, element: <HomePage /> }]
+
+/** config/pages.ts 에 계획만 있는 페이지는 자동으로 '준비 중' 페이지가 된다 */
+const PLANNED_ROUTES: RouteObject[] = PAGE_PLAN_IDS.map((id) => ({ path: id, element: <PlannedPage id={id} /> }))
+
 const routes: RouteObject[] = [
   {
     element: <AppLayout />,
-    children: [
-      { index: true, element: <HomePage /> },
-      { path: 'projects', element: <PlannedPage id="projects" /> },
-      { path: 'teams', element: <PlannedPage id="teams" /> },
-      { path: 'community', element: <PlannedPage id="community" /> },
-      { path: 'recruits', element: <PlannedPage id="recruits" /> },
-      { path: 'admin', element: <PlannedPage id="admin" /> },
-      { path: '*', element: <NotFoundPage /> },
-    ],
+    // 화면을 그리다 오류가 나면 흰 화면 대신 안내를 보여준다
+    errorElement: <ErrorPage />,
+    children: [...BUILT_ROUTES, ...PLANNED_ROUTES, { path: '*', element: <NotFoundPage /> }],
   },
 ]
 

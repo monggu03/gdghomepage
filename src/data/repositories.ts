@@ -13,9 +13,12 @@ export interface StatsRepository {
   list(): Promise<Stat[]>
 }
 
+/** 소개(about)는 고정 문구(config/site.ts)라서 서버에서 받지 않는다 */
+export type PreviewPlace = Exclude<PlaceId, 'about'>
+
 export interface PreviewRepository {
   /** 장소별 최신 글 몇 개 (지도 패널의 '최신 3개') */
-  latest(place: PlaceId, limit: number): Promise<PreviewItem[]>
+  latest(place: PreviewPlace, limit: number): Promise<PreviewItem[]>
 }
 
 export interface ReviewRepository {
@@ -24,7 +27,6 @@ export interface ReviewRepository {
 
 /** 아카이브 검색. 지금은 키워드 일치, 나중에 서버를 거쳐 Gemini API 로 바꾼다 (Strategy) */
 export interface SearchService {
-  readonly name: string
   search(query: string): Promise<SearchHit[]>
 }
 

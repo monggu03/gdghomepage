@@ -53,3 +53,9 @@ export const SCENE_BOUNDS = { x: -468, y: -130, w: 936, h: 607 } as const
 
 /** 폰에서는 양 끝 나무 모서리를 조금 잘라 장면을 키운다 */
 export const SCENE_BOUNDS_NARROW = { x: -438, y: -130, w: 876, h: 607 } as const
+
+/**
+ * 화면 오른쪽에 있는 장소인지 가르는 기준 (격자 x - y).
+ * 이 값보다 크면 지도 오른쪽 끝(Projects 쪽)이라 이름표를 왼쪽으로 돌릴 수 있다.
+ */
+export const RIGHT_SIDE_THRESHOLD = 3.5

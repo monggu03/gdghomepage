@@ -27,10 +27,12 @@ export function rankDocs(docs: readonly ArchiveDoc[], query: string): SearchHit[
     .sort((a, b) => b.score - a.score)
 }
 
-/** 예시용 검색: 단어가 겹치는지만 본다. 실제 서비스에서는 geminiSearch 로 바꾼다. */
+/**
+ * 서버 없이 쓰는 검색: 단어가 겹치는지만 본다.
+ * 실제 서비스에서는 http 구현의 search(서버 /api/search → Gemini API)가 이 자리를 대신한다.
+ */
 export function createKeywordSearch(docs: readonly ArchiveDoc[]): SearchService {
   return {
-    name: '키워드 예시',
     search: async (query) => rankDocs(docs, query),
   }
 }

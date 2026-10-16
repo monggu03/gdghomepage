@@ -1,30 +1,46 @@
 import type { Repositories } from '@/data/repositories'
-import type { PreviewItem, Review, ScheduleEvent, SearchHit, Stat } from '@/domain/types'
+import { adaptList, toPreviewItem, toReview, toScheduleEvent, toSearchHit, toStat } from './adapters'
 
 /**
- * Spring Boot API 를 쓰는 구현 (자리만 잡아 둔 것).
- * 아래 주소는 제안일 뿐이고, 실제 주소와 응답 모양은 BE 팀의 API 명세서(11/2)를 따른다.
- * 응답 모양이 domain/types 와 다르면 여기서 바꿔서(adapter) 넘긴다. 컴포넌트는 고치지 않는다.
+ * Spring Boot API 를 쓰는 구현.
+ * 아래 주소는 제안일 뿐이고, 실제 주소는 BE 팀의 API 명세서를 따른다.
+ * 응답 모양이 다르면 adapters.ts 에서 바꾼다. 컴포넌트는 고치지 않는다.
  *
  * Gemini API 키는 브라우저에 두지 않는다. 검색은 반드시 서버(/api/search)를 거친다.
  */
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { Accept: 'application/json' } })
-  if (!res.ok) throw new Error(`${res.status} ${url}`)
-  return (await res.json()) as T
+export class HttpError extends Error {
+  readonly status: number
+  constructor(status: number, url: string) {
+    super(`${status} ${url}`)
+    this.name = 'HttpError'
+    this.status = status
+  }
 }
 
-export function createHttpRepositories(baseUrl = '/api'): Repositories {
+/** 검색어가 이보다 짧으면 서버를 부르지 않는다 (한 글자마다 Gemini 를 부르지 않게) */
+export const MIN_SEARCH_LENGTH = 2
+
+export function createHttpRepositories(baseUrl = '/api', fetcher: typeof fetch = (...args) => fetch(...args)): Repositories {
+  const getJson = async (path: string): Promise<unknown> => {
+    const url = `${baseUrl}${path}`
+    const res = await fetcher(url, { headers: { Accept: 'application/json' } })
+    if (!res.ok) throw new HttpError(res.status, url)
+    return res.json()
+  }
+
   return {
-    schedule: { list: () => getJson<ScheduleEvent[]>(`${baseUrl}/schedules`) },
-    stats: { list: () => getJson<Stat[]>(`${baseUrl}/stats`) },
+    schedule: { list: async () => adaptList(await getJson('/schedules'), toScheduleEvent) },
+    stats: { list: async () => adaptList(await getJson('/stats'), toStat) },
     previews: {
-      latest: (place, limit) => getJson<PreviewItem[]>(`${baseUrl}/places/${place}/latest?limit=${limit}`),
+      latest: async (place, limit) => adaptList(await getJson(`/places/${place}/latest?limit=${limit}`), toPreviewItem).slice(0, limit),
     },
-    reviews: { list: () => getJson<Review[]>(`${baseUrl}/reviews`) },
+    reviews: { list: async () => adaptList(await getJson('/reviews'), toReview) },
     search: {
-      name: 'Gemini',
-      search: (q) => getJson<SearchHit[]>(`${baseUrl}/search?q=${encodeURIComponent(q)}`),
+      search: async (q) => {
+        const query = q.trim()
+        if (query.length < MIN_SEARCH_LENGTH) return []
+        return adaptList(await getJson(`/search?q=${encodeURIComponent(query)}`), toSearchHit)
+      },
     },
   }
 }

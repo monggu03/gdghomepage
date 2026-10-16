@@ -15,19 +15,35 @@
   border-radius: var(--radius-pill);
 }
 .bar .headerInner { max-width: 1200px; margin: 0 auto; }
-.brand { display: flex; align-items: center; gap: 9px; text-decoration: none; white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 9px; min-height: 40px; text-decoration: none; white-space: nowrap; }
 .brandName { font: 700 17px/1 var(--font-display); letter-spacing: -0.01em; }
 .nav { display: flex; gap: 2px; }
 .navLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   font: 600 14px var(--font-display);
   color: var(--ink-sub);
   text-decoration: none;
-  padding: 7px 12px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
 .navLink:hover, .navActive { background: var(--chip); color: var(--ink); }
 .search { flex: 1; max-width: 480px; margin-left: auto; }
+.searchToggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chip);
+  cursor: pointer;
+}
+.searchToggle svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
 .cta {
   flex: none;
   display: inline-flex;
@@ -43,21 +59,26 @@
 }
 
 @media (max-width: 1240px) {
-  .navLink { padding: 7px 9px; font-size: 13.5px; }
+  .navLink { padding: 0 9px; }
 }
 @media (max-width: 1060px) {
-  .navLink { padding: 6px 7px; font-size: 13px; }
+  .navLink { padding: 0 7px; font-size: 13px; }
   .brandName { font-size: 15px; }
 }
 
 /* 좁은 화면: 머리말이 흐름 안으로 들어오고, 메뉴는 옆으로 넘기는 줄이 된다 */
 @media (max-width: 900px) {
-  .overlay { position: relative; top: auto; left: auto; right: auto; padding: 12px var(--gutter-r) 8px var(--gutter-l); }
-  .headerInner { flex-wrap: wrap; border-radius: 24px; padding: 10px 10px 10px 14px; gap: 10px; }
-  .cta { margin-left: auto; height: 36px; padding: 0 14px; }
-  .nav { order: 3; flex: 1 1 100%; overflow-x: auto; scrollbar-width: none; margin: 0 -4px; }
+  .overlay { position: relative; top: auto; left: auto; right: auto; padding: 12px var(--gutter-r) 4px var(--gutter-l); }
+  .headerInner { flex-wrap: wrap; border-radius: 24px; padding: 8px 8px 6px 14px; gap: 6px 8px; }
+  .cta { height: 44px; padding: 0 16px; }
+  .nav { order: 3; flex: 1 1 100%; overflow-x: auto; scrollbar-width: none; margin: 0 -6px; }
   .nav::-webkit-scrollbar { display: none; }
-  .search { order: 4; flex: 1 1 100%; max-width: none; margin: 0; }
+  .navLink { min-height: 40px; padding: 0 10px; font-size: 14px; }
+  .search { order: 4; flex: 1 1 100%; max-width: none; margin: 2px 0 4px; }
+}
+/* 폰: 메뉴 5개가 한 줄에 다 보이게 (잘린 'Recrui…' 방지) */
+@media (max-width: 420px) {
+  .navLink { padding: 0 7px; }
 }
 
 /* ── 꼬리말 ── */
@@ -67,13 +88,14 @@
   margin: 0 auto;
   padding: 32px var(--gutter-r) calc(32px + env(safe-area-inset-bottom, 0px)) var(--gutter-l);
   display: grid;
-  gap: 18px;
-  font-size: 13px;
+  gap: 16px;
+  font-size: 14px;
   color: var(--ink-sub);
 }
 .footerBrand { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
 .footerBrand b { font: 700 16px var(--font-display); color: var(--ink); }
-.footerLinks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
-.footerLinks a { color: var(--ink); font-weight: 600; }
-.footerBottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
-.footerBottom a { color: var(--ink); font-weight: 600; }
+.footerContact { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; }
+.footerLinks { display: flex; flex-wrap: wrap; gap: 0 18px; }
+.footerLinks a, .footerBottom a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; }
+.disclaimer { font-size: 12px; }
+.footerBottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 20px; font-size: 12px; }

@@ -26,10 +26,14 @@ function make<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string
   return el
 }
 
+/** 사람 크기 배율. 건물 옆에서 잘 보이도록 조금 크게 그린다 */
+const PERSON_SCALE = 1.3
+
 function createPerson(): { node: SVGGElement; body: SVGGElement } {
   const node = make('g', {})
-  make('ellipse', { cx: 0, cy: 0, rx: 6, ry: 3, fill: 'rgba(30,40,90,.16)' }, node)
-  const body = make('g', {}, node)
+  const figure = make('g', { transform: `scale(${PERSON_SCALE})` }, node)
+  make('ellipse', { cx: 0, cy: 0, rx: 6, ry: 3, fill: 'rgba(30,40,90,.16)' }, figure)
+  const body = make('g', {}, figure)
   make('rect', { x: -3.6, y: -16, width: 7.2, height: 12, rx: 3.6, fill: pick(SHIRTS) }, body)
   make('rect', { x: -3, y: -6, width: 2.4, height: 6, rx: 1.2, fill: '#3B4256' }, body)
   make('rect', { x: 0.6, y: -6, width: 2.4, height: 6, rx: 1.2, fill: '#3B4256' }, body)

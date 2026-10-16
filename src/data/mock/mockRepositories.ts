@@ -7,7 +7,7 @@ export function createMockRepositories(): Repositories {
   return {
     schedule: { list: async () => SCHEDULE.map((e) => ({ ...e })) },
     stats: { list: async () => STATS.map((s) => ({ ...s })) },
-    previews: { latest: async (place, limit) => PREVIEWS[place].slice(0, limit) },
+    previews: { latest: async (place, limit) => PREVIEWS[place].slice(0, limit).map((p) => ({ ...p })) },
     reviews: { list: async () => REVIEWS.map((r) => ({ ...r })) },
     search: createKeywordSearch(ARCHIVE),
   }

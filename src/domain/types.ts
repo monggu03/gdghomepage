@@ -1,6 +1,6 @@
 /**
  * 화면 전체에서 쓰는 데이터 모양.
- * 백엔드(Spring Boot) API 응답도 이 모양에 맞춰 바꿔서(adapter) 넘긴다.
+ * 백엔드(Spring Boot) API 응답은 data/http/adapters.ts 에서 이 모양으로 바꿔서 넘긴다.
  */
 
 /** 지도 위 장소 = 상단 메뉴 하나 (배범서 기획: Home · Projects · Teams · Community · Recruits) */
@@ -47,6 +47,7 @@ export interface Place {
 export type EventKind = 'sprint' | 'event' | 'session' | 'notice' | 'rest'
 
 export interface ScheduleEvent {
+  id: string
   /** YYYY-MM-DD (한국 시간 기준 날짜) */
   date: string
   /** 여러 날 행사의 마지막 날 */
@@ -57,33 +58,36 @@ export interface ScheduleEvent {
   place: PlaceId
 }
 
+/** 첫 화면에 한 줄로 보여줄 숫자. 실제 값이 있을 때만 쓴다 (예시 숫자는 넣지 않는다) */
 export interface Stat {
   id: string
   label: string
   value: number
-  note: string
-  /** 실제 값이 아직 없어서 넣은 예시 숫자 */
-  sample: boolean
-  color: string
+  note?: string
 }
 
+/** 장소 미리보기의 글 한 줄 */
 export interface PreviewItem {
-  /** YYYY-MM-DD 이거나 '공지 예정' 같은 짧은 말 */
-  when: string
+  id: string
   title: string
+  /** YYYY-MM-DD. 날짜가 없는 글은 label 을 대신 보여준다 */
+  date?: string
+  /** '모집 중' 같은 짧은 말 */
+  label?: string
   tag?: string
+  /** 실제 글이 아니라 화면을 보여주려고 넣은 예시 */
   sample?: boolean
 }
 
 export interface Review {
   id: string
-  /** 비어 있으면 자리 표시 카드 */
-  body?: string
-  author?: string
+  body: string
+  author: string
   part?: string
 }
 
 export interface ArchiveDoc {
+  id: string
   place: PlaceId
   title: string
   meta: string
@@ -94,11 +98,4 @@ export interface ArchiveDoc {
 export interface SearchHit {
   doc: ArchiveDoc
   score: number
-}
-
-export interface SprintStep {
-  label: string
-  when: string
-  date: string
-  note?: string
 }

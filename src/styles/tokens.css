@@ -11,7 +11,7 @@
   --ink: #212121;
   --ink-body: #3e3e3e;
   --ink-sub: #514d4d;
-  --ink-faint: #b9b9b9; /* 읽혀야 하는 정보에는 쓰지 않음 */
+  --ink-faint: #b9b9b9; /* 장식용. 읽혀야 하는 글자에는 쓰지 않음 (대비 부족) */
   --line: #c9c9c9;
 
   --g-blue: #4285f4;
@@ -31,7 +31,7 @@
 
   /* 웹 표면 */
   --bg: #ffffff;
-  --surface: rgba(255, 255, 255, 0.9);
+  --surface: #ffffff; /* 반투명 + blur 는 지도 위 프레임을 떨어뜨려서 뺐다 */
   --surface-solid: #ffffff;
   --hair: #e7e7e7;
   --chip: #f3f3f3;

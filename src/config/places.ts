@@ -2,7 +2,8 @@ import type { Place, PlaceId } from '@/domain/types'
 
 /**
  * 지도 = 메뉴.
- * 장소를 하나 더 만들려면 여기 한 줄을 추가하면 된다. 건물 모양(roof)은 등록된 것 중에서 고른다.
+ * 장소 하나가 메뉴 하나, 건물 하나, 이름표 하나, 미리보기 패널 하나가 된다.
+ * 장소를 더하려면: domain/types.ts 의 PlaceId 에 이름 추가 → 여기 한 줄 → config/pages.ts 에 페이지 계획.
  * 격자는 14×14, 가운데 6.2~7.8 줄이 십자 보행로, 5~9 칸이 광장이다.
  */
 export const PLACES: readonly Place[] = [
@@ -12,11 +13,11 @@ export const PLACES: readonly Place[] = [
     sub: '소개',
     path: '/',
     color: '#212121',
-    description: 'Google Developer Groups on Campus Dongguk University. 듣는 활동보다 직접 만드는 활동을 보여줍니다.',
+    description: '지도에서 건물을 누르면 각 메뉴를 미리 볼 수 있습니다. 광장의 깃발은 GDGoC DGU 소개입니다.',
   },
   {
     id: 'community',
-    label: 'Community',
+    label: '커뮤니티',
     sub: '공지 · 세션 · 행사',
     path: '/community',
     color: '#4285f4',
@@ -25,18 +26,18 @@ export const PLACES: readonly Place[] = [
   },
   {
     id: 'projects',
-    label: 'Projects',
-    sub: '프로젝트 포트폴리오',
+    label: '프로젝트',
+    sub: '팀 프로젝트 모음',
     path: '/projects',
     color: '#ea4335',
     live: true,
-    description: '실제 배포까지 가는 팀 프로젝트. 12.29 Demo Day에서 성과를 공유합니다.',
+    description: '실제 배포까지 가는 팀 프로젝트 G-Sprint. 12.29 데모데이에서 성과를 공유합니다.',
     footprint: { x: 9.7, y: 0.9, w: 3.4, d: 3.2, h: 1.25, door: 'L', roof: 'saw', pinGap: 1.05 },
   },
   {
     id: 'teams',
-    label: 'Teams',
-    sub: '팀원 모집 게시판',
+    label: '팀원 모집',
+    sub: '스터디 · 프로젝트 · 공모전',
     path: '/teams',
     color: '#fbbc04',
     description: '스터디 · 프로젝트 · 공모전을 같이할 팀원을 모읍니다.',
@@ -44,8 +45,8 @@ export const PLACES: readonly Place[] = [
   },
   {
     id: 'recruits',
-    label: 'Recruits',
-    sub: '지원하기',
+    label: '지원 안내',
+    sub: '5기 모집',
     path: '/recruits',
     color: '#34a853',
     description: '모집 일정과 지원 방법을 안내합니다.',
@@ -57,11 +58,17 @@ export const PLACE_BY_ID: Readonly<Record<PlaceId, Place>> = Object.fromEntries(
   PLACES.map((p) => [p.id, p]),
 ) as Record<PlaceId, Place>
 
-/** 상단 메뉴 순서 (배범서 기획 순서) */
+/** 상단 메뉴 순서 (배범서 기획 순서: Home · Projects · Teams · Community · Recruits) */
 export const NAV_ORDER: readonly PlaceId[] = ['about', 'projects', 'teams', 'community', 'recruits']
 
-/** 메뉴에 보이는 이름: 소개 장소는 메뉴에서 Home */
-export const navLabel = (id: PlaceId) => (id === 'about' ? 'Home' : PLACE_BY_ID[id].label)
+/** 메뉴에 보이는 이름: 소개 장소는 메뉴에서 '홈' */
+export const navLabel = (id: PlaceId) => (id === 'about' ? '홈' : PLACE_BY_ID[id].label)
 
-/** 처음 열려 있을 장소: 지금 진행 중인 곳 */
-export const DEFAULT_PLACE: PlaceId = PLACES.find((p) => p.live)?.id ?? 'about'
+/** 화면에 칠할 색. 소개 장소의 잉크색은 토큰을 따른다 */
+export const placeColor = (id: PlaceId) => (id === 'about' ? 'var(--ink)' : PLACE_BY_ID[id].color)
+
+/**
+ * 처음 열려 있을 장소: 소개.
+ * 처음 온 사람이 '무슨 동아리인지'부터 보게 한다 (리뷰: 신입생 · 외부 협업 관점)
+ */
+export const DEFAULT_PLACE: PlaceId = 'about'

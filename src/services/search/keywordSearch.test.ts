@@ -3,9 +3,9 @@ import type { ArchiveDoc } from '@/domain/types'
 import { createKeywordSearch, rankDocs, tokenize } from './keywordSearch'
 
 const docs: ArchiveDoc[] = [
-  { place: 'community', title: 'Spring Boot 입문 세션', meta: '3rd', keywords: 'spring 백엔드 세미나' },
-  { place: 'community', title: 'Core Session #2', meta: '2026.10.06', keywords: '세션 세미나' },
-  { place: 'teams', title: '동지톤 팀원 모집', meta: '공모전', keywords: '해커톤' },
+  { id: 'a', place: 'community', title: 'Spring Boot 스터디', meta: '스터디', keywords: 'spring 백엔드 세미나' },
+  { id: 'b', place: 'community', title: 'Core Session #2', meta: '2026.10.06', keywords: '세션 세미나' },
+  { id: 'c', place: 'teams', title: '동지톤 팀원 모집', meta: '공모전', keywords: '해커톤' },
 ]
 
 describe('keywordSearch', () => {
@@ -15,7 +15,7 @@ describe('keywordSearch', () => {
 
   it('제목에 맞는 글을 먼저 보여준다', () => {
     const hits = rankDocs(docs, 'Spring 세미나')
-    expect(hits.map((h) => h.doc.title)).toEqual(['Spring Boot 입문 세션', 'Core Session #2'])
+    expect(hits.map((h) => h.doc.title)).toEqual(['Spring Boot 스터디', 'Core Session #2'])
     expect(hits[0].score).toBe(3)
   })
 

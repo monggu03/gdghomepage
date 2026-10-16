@@ -6,7 +6,7 @@ import { depthOfBox, depthOfPoint } from '@/lib/iso'
 import { useCampus, useCampusActions } from '@/state/useCampus'
 import { Building } from './Building'
 import { FlagPlaza } from './FlagPlaza'
-import { FLAG_PIN, pinAnchor } from './geometry'
+import { FLAG_PIN, isRightSide, pinAnchor } from './geometry'
 import { Bench, Bush, Tree } from './Greenery'
 import { Ground } from './Ground'
 import { BENCHES, BUSHES, FLAG_AT, TREES } from './layout'
@@ -18,8 +18,10 @@ interface Props {
   svgRef: RefObject<SVGSVGElement | null>
   viewBox: string
   pinScale: number
-  /** 폰: 오른쪽 장소의 이름표를 왼쪽으로 */
+  /** 오른쪽 장소의 이름표를 왼쪽으로 (오른쪽 카드나 화면 끝에 잘리지 않게) */
   flipRightPins: boolean
+  /** 폰: 이름표의 '진행 중' 표시를 빼서 이름표끼리 겹치지 않게 */
+  compactPins?: boolean
   walkers?: number
   className?: string
 }
@@ -36,7 +38,7 @@ interface StaticItem {
  * - 선택·호버·검색 상태는 CampusState 에서 읽는다 (메뉴·패널과 공유)
  * - 사람은 useWalkers 가 정적 물체 사이에 직접 끼워 넣는다
  */
-export function CampusScene({ svgRef, viewBox, pinScale, flipRightPins, walkers = 7, className = '' }: Props) {
+export function CampusScene({ svgRef, viewBox, pinScale, flipRightPins, compactPins = false, walkers = 7, className = '' }: Props) {
   const { selected, hovered, hits } = useCampus()
   const { select, hover } = useCampusActions()
   const reduceMotion = useReducedMotion()
@@ -78,7 +80,7 @@ export function CampusScene({ svgRef, viewBox, pinScale, flipRightPins, walkers 
   ].sort((a, b) => a.depth - b.depth)
 
   return (
-    <svg ref={svgRef} className={`${s.scene} ${className}`} viewBox={viewBox} preserveAspectRatio="xMinYMin meet" role="group" aria-label="GDGoC DGU 캠퍼스 지도">
+    <svg ref={svgRef} className={`${s.scene} ${className}`} viewBox={viewBox} preserveAspectRatio="xMinYMin meet" role="group" aria-label="GDGoC DGU 캠퍼스 지도. 건물을 고르면 오른쪽에 미리보기가 열립니다">
       <defs>
         <linearGradient id="campus-glass-l" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#f7faff" />
@@ -106,7 +108,8 @@ export function CampusScene({ svgRef, viewBox, pinScale, flipRightPins, walkers 
               place={place}
               at={at}
               scale={pinScale}
-              flip={flipRightPins && at[0] - at[1] > 3.5}
+              flip={flipRightPins && isRightSide(at)}
+              showLive={!compactPins}
               selected={selected === place.id}
               lifted={hovered === place.id}
               dim={isDim(place.id)}

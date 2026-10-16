@@ -24,12 +24,13 @@
 /* 건물 · 깃발 */
 .bld {
   cursor: pointer;
-  outline: none;
   transition: transform 0.25s ease, opacity 0.3s ease;
 }
 .hov { transform: translateY(-6px); }
 .sel { filter: drop-shadow(0 10px 12px rgba(30, 50, 110, 0.25)); }
-.hit { animation: hit 1.6s ease-in-out infinite; }
+/* 검색에 걸린 건물: 깜빡이지 않는 빛 (매 프레임 다시 그리지 않게) */
+.hit { filter: drop-shadow(0 0 10px var(--glow)); }
+.bld:focus-visible { outline: 3px solid var(--g-blue); outline-offset: 4px; }
 .dim { opacity: 0.32; }
 .flag {
   transform-box: fill-box;
@@ -55,13 +56,8 @@
   0%, 100% { transform: skewY(0); }
   50% { transform: skewY(-6deg) scaleX(0.94); }
 }
-@keyframes hit {
-  0%, 100% { filter: drop-shadow(0 0 5px var(--glow)); }
-  50% { filter: drop-shadow(0 0 16px var(--glow)); }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .flag, .hit { animation: none; }
-  .hit { filter: drop-shadow(0 0 10px var(--glow)); }
+  .flag { animation: none; }
   .bld, .lift { transition: none; }
 }

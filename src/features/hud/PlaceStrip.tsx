@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { PLACES } from '@/config/places'
+import { PLACES, placeColor } from '@/config/places'
 import { useReducedMotion } from '@/hooks/useMediaQuery'
 import { useCampus, useCampusActions } from '@/state/useCampus'
+import { PLACE_PANEL_ID } from './shared'
 import s from './hud.module.css'
 
 /**
@@ -23,18 +24,18 @@ export function PlaceStrip() {
   }, [selected, reduce])
 
   return (
-    <div ref={rowRef} className={s.strip} role="tablist" aria-label="지도 장소">
+    <div ref={rowRef} className={s.strip} role="group" aria-label="지도 장소 고르기">
       {PLACES.map((p) => (
         <button
           key={p.id}
           type="button"
-          role="tab"
-          aria-selected={selected === p.id}
+          aria-current={selected === p.id ? 'true' : undefined}
+          aria-controls={PLACE_PANEL_ID}
           data-place={p.id}
           className={`${s.stripCard} ${selected === p.id ? s.stripOn : ''}`}
           onClick={() => select(p.id)}
         >
-          <i style={{ background: p.id === 'about' ? 'var(--ink)' : p.color }} />
+          <i style={{ background: placeColor(p.id) }} />
           <span>
             <b>{p.label}</b>
             <small>{p.sub}</small>
