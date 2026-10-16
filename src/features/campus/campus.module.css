@@ -1,0 +1,67 @@
+/* 캠퍼스 지도. 색은 styles/tokens.css 의 토큰을 쓴다 */
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: manipulation;
+}
+
+/* 바닥 */
+.gndT { fill: var(--scene-ground-top); }
+.gndL { fill: var(--scene-ground-left); }
+.gndR { fill: var(--scene-ground-right); }
+.gndEdge { stroke: #ffffff; }
+.grass { fill: var(--scene-grass); stroke: var(--scene-grass-line); }
+.walk { fill: var(--scene-walk); }
+.plaza { fill: var(--scene-plaza); stroke: var(--scene-plaza-line); }
+.plazaRing { fill: none; stroke: var(--scene-plaza-line); }
+.plT { fill: var(--scene-plinth-top); }
+.plL { fill: var(--scene-plinth-left); }
+.plR { fill: var(--scene-plinth-right); }
+
+/* 건물 · 깃발 */
+.bld {
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.25s ease, opacity 0.3s ease;
+}
+.hov { transform: translateY(-6px); }
+.sel { filter: drop-shadow(0 10px 12px rgba(30, 50, 110, 0.25)); }
+.hit { animation: hit 1.6s ease-in-out infinite; }
+.dim { opacity: 0.32; }
+.flag {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: wave 2.2s ease-in-out infinite;
+}
+
+/* 이름표 핀: 평소엔 가만히, 호버 때만 올라온다 */
+.pin { cursor: pointer; transition: opacity 0.3s ease; }
+.lift { transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.pinLift .lift { transform: translateY(-9px); }
+.markerHole { fill: #ffffff; }
+.chip { fill: #ffffff; stroke-width: 1.2; }
+.pinSel .chip { stroke-width: 2.6; }
+.chipText { font: 600 13px var(--font-display); fill: var(--ink); }
+.liveBg { fill: var(--ink); }
+.liveDot { fill: var(--g-green); }
+.liveText { font: 600 11px var(--font-kr); fill: #ffffff; }
+.countBg { fill: var(--ink); }
+.countText { font: 700 11px var(--font-display); fill: #ffffff; }
+
+@keyframes wave {
+  0%, 100% { transform: skewY(0); }
+  50% { transform: skewY(-6deg) scaleX(0.94); }
+}
+@keyframes hit {
+  0%, 100% { filter: drop-shadow(0 0 5px var(--glow)); }
+  50% { filter: drop-shadow(0 0 16px var(--glow)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flag, .hit { animation: none; }
+  .hit { filter: drop-shadow(0 0 10px var(--glow)); }
+  .bld, .lift { transition: none; }
+}

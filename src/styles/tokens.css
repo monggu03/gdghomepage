@@ -1,0 +1,70 @@
+/*
+ * GDGoC DGU 디자인 시스템 토큰 (인스타 카드 기준을 웹에 옮긴 것).
+ * 규칙: 구글 4색은 도형·테두리에만, google-yellow 는 글자에 쓰지 않는다.
+ *       4기 주황(gen4-orange)은 '4th' 표시에만 쓰고 글자는 on-orange(잉크색)로 올린다.
+ * 밝은 화면 하나로 고정한다 (다크 모드를 따라가지 않음, 팀 피드백 2026-10-16).
+ */
+:root {
+  color-scheme: light;
+
+  --paper: #ffffff;
+  --ink: #212121;
+  --ink-body: #3e3e3e;
+  --ink-sub: #514d4d;
+  --ink-faint: #b9b9b9; /* 읽혀야 하는 정보에는 쓰지 않음 */
+  --line: #c9c9c9;
+
+  --g-blue: #4285f4;
+  --g-red: #ea4335;
+  --g-yellow: #fbbc04;
+  --g-green: #34a853;
+  --gen4-orange: #ff6309;
+  --on-orange: #212121;
+
+  --blue-100: #dae2ee;
+  --blue-200: #abc7f4;
+  --blue-300: #699ef6;
+  --coral-100: #ffe8e6;
+  --coral-200: #ffa199;
+  --coral-400: #ff6c61;
+  --coral-500: #ff4a3c;
+
+  /* 웹 표면 */
+  --bg: #ffffff;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-solid: #ffffff;
+  --hair: #e7e7e7;
+  --chip: #f3f3f3;
+  --shadow: 0 10px 30px rgba(33, 33, 33, 0.08), 0 1px 2px rgba(33, 33, 33, 0.05);
+
+  /* 지도 */
+  --scene-ground-top: #f8f9fc;
+  --scene-ground-left: #dde5f1;
+  --scene-ground-right: #c8d3e6;
+  --scene-grass: #e5f4e9;
+  --scene-grass-line: #d3eadb;
+  --scene-walk: #eef1f7;
+  --scene-plaza: #f8f9fb;
+  --scene-plaza-line: #dde1ea;
+  --scene-plinth-top: #eef1f6;
+  --scene-plinth-left: #e1e6ef;
+  --scene-plinth-right: #cdd4e2;
+
+  /* 글꼴: 영문·숫자는 Google Sans Flex, 한글은 Pretendard */
+  --font-display: 'Google Sans Flex', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif;
+  --font-kr: 'Pretendard Variable', Pretendard, 'Google Sans Flex', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+
+  /* 모양 · 간격 (space-1~5 = 8/16/24/40/64) */
+  --radius-card: 20px;
+  --radius-photo: 36px;
+  --radius-pill: 999px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 40px;
+  --space-5: 64px;
+
+  /* 화면 옆 여백 (폰 노치까지 고려) */
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
