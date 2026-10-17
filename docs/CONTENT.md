@@ -15,8 +15,8 @@
 
 - **조사는 붙여 씁니다**: `G-Sprint는`, `Camping Seminar를`, `TTS로`, `AI가`, `gdsc.dgu@gmail.com이나`, `@gdg.donggukuniv로`.
 - **화면에 보이는 날짜는 점으로** 씁니다: `2026.08.18`, `2026.09.08–09.10`. `2026-08-18` 모양은 `date` · `start` 같은 날짜 필드에만 씁니다.
-- **한 가지를 한 이름으로**: `Google 기술`(구글 X), `코어 멤버`(Core Member X), `Solution Challenge 2024`, `Solution Challenge 2025 APAC`, `동국대 Dev Conference 2025`, 10.13 은 `킥오프`.
-- 기수 연혁의 숫자는 센 만큼만: `Camping Seminar 공개 기록 8건`(events.json 의 그 기수 · 시리즈 줄 수), `SDGs Project 4개`(projects.json 의 그 기수 · 프로그램 줄 수).
+- **한 가지를 한 이름으로**: `Google 기술`(구글 X), `코어 멤버`(Core Member X), `Solution Challenge 2024`, `Solution Challenge 2025 APAC`, `Solution Challenge 2026`, `동국대 Dev Conference 2025`, 10.13 은 `킥오프`.
+- 기수 연혁의 숫자는 센 만큼만: `Camping Seminar 공개 기록 8건`(events.json 의 그 기수 · 시리즈 줄 수), `Solution Challenge 2026 프로젝트 4개`(projects.json 의 그 기수 · 프로그램 줄 수).
 
 ## 2. 파일별 안내
 
@@ -74,7 +74,7 @@
 | `id` | 바뀌지 않는 이름 |
 | `name` | 프로젝트 이름 (README 의 이름) |
 | `summary` | 짧은 ~습니다체 한두 문장. **README 에 있는 내용만.** README 에 설명이 없으면 비웁니다 |
-| `program` | 어떤 프로그램에서 만들었는지 (`Solution Challenge 2024`, `Solution Challenge 2025 APAC`, `SDGs Project`, `G-Sprint` …) |
+| `program` | 어떤 프로그램에서 만들었는지 (`Solution Challenge 2024`, `Solution Challenge 2025 APAC`, `Solution Challenge 2026`, `G-Sprint` …) |
 | `year` | 연도 |
 | `generation` | 몇 기 (아래 규칙) |
 | `stack` | 기술 4개까지 (README 나 GitHub 언어 표시 기준) |
@@ -94,7 +94,7 @@
 | `isPublicProject(p)` | 같은 기준의 판별 함수 (서버에서 받은 목록을 셀 때) |
 | `projectsBasis` | 숫자 옆 기준 문구 `GitHub GDSC-DGU 기준` |
 
-**기수 정하는 규칙**: 프로그램이 열린 시기로 정합니다. 학년은 9월에 시작합니다 (2기 = 2024.09 ~ 2025.08).
+**기수 정하는 규칙**: 프로그램이 열린 시기로 정합니다. 기수는 9월에 시작해 다음 해 7월에 끝납니다 (1기 2023.09–2024.07, 2기 2024.09–2025.07, 3기 2025.09–2026.07, 4기 Organizer 확인). Solution Challenge는 해마다 초에 열려서, 그해 1–7월에 활동하는 기수가 참여합니다.
 
 | 프로그램 | 시기 | 기수 |
 |---|---|---|
@@ -102,7 +102,7 @@
 | GDSC DGU 웹사이트 (`gdsc-dgu`, README 2024.03) | 2024년 3월 | 1기 |
 | Solution Challenge 2025 APAC (`2025-APAC-SolutionChallenge-*`) | 2025년 상반기 | 2기 |
 | 2025 동국대 봄 축제 웹사이트 (`DGU-2025-Festival-*`) | 2025년 봄 | 2기 |
-| SDGs Project (`2026-SDGs-Project-*`) | 2026년 상반기 | 3기 |
+| Solution Challenge 2026 (`2026-SDGs-Project-*`, 저장소 이름은 SDGs Project) | 2026년 상반기 | 3기 |
 | G-Sprint (홈페이지 리뉴얼) | 2026년 가을 | 4기 |
 
 `GDGoC-DGU-Website` 는 마지막 수정이 2025.09 라는 것만 확인돼서 기수를 비워 두었습니다.

@@ -1,4 +1,4 @@
-import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, createHashRouter, createMemoryRouter, type RouteObject } from 'react-router-dom'
 import { PAGE_PLAN_IDS } from '@/config/pages'
 import { HomePage } from '@/features/home/HomePage'
 import { AppLayout } from '@/features/layout/AppLayout'
@@ -35,5 +35,15 @@ const routes: RouteObject[] = [
 /**
  * 보통은 /projects 같은 주소(browser).
  * 서버 설정 없이 파일만 올리는 미리보기에서는 #/projects 주소(hash)를 쓴다: VITE_ROUTER=hash
+ * 파일 미리보기 창처럼 about:srcdoc · blob: 주소에서 열리면 그 주소로는 URL 을 만들 수 없어서
+ * ('Failed to construct URL: Invalid URL') 메모리 라우터를 쓴다. 처음 위치는 #/projects 같은 해시에서 읽는다.
  */
-export const router = import.meta.env.VITE_ROUTER === 'hash' ? createHashRouter(routes) : createBrowserRouter(routes)
+function createRouter() {
+  if (!/^https?:$/.test(window.location.protocol)) {
+    const start = window.location.hash.replace(/^#/, '') || '/'
+    return createMemoryRouter(routes, { initialEntries: [start.startsWith('/') ? start : `/${start}`] })
+  }
+  return import.meta.env.VITE_ROUTER === 'hash' ? createHashRouter(routes) : createBrowserRouter(routes)
+}
+
+export const router = createRouter()

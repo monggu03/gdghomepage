@@ -140,9 +140,9 @@ describe('projects.json', () => {
     expect(isPublicProject({})).toBe(false)
   })
 
-  it('프로그램 이름은 한 가지로 쓴다 (Solution Challenge 2024 · Solution Challenge 2025 APAC)', () => {
+  it('프로그램 이름은 한 가지로 쓴다 (Solution Challenge 2024 · 2025 APAC · 2026)', () => {
     for (const p of PROJECTS.filter((x) => /solution challenge/i.test(x.program))) {
-      expect(['Solution Challenge 2024', 'Solution Challenge 2025 APAC'], p.id).toContain(p.program)
+      expect(['Solution Challenge 2024', 'Solution Challenge 2025 APAC', 'Solution Challenge 2026'], p.id).toContain(p.program)
     }
   })
 
@@ -202,7 +202,7 @@ describe('generations.json', () => {
         const rec = h.match(/^(.+) 공개 기록 (\d+)건$/)
         if (rec) expect(EVENTS.filter((e) => e.generation === g.n && e.series === rec[1]).length, where).toBe(Number(rec[2]))
         if (/Camping Seminar/.test(h)) expect(rec, `${where}: 'Camping Seminar 공개 기록 N건' 으로 씁니다`).not.toBeNull()
-        // 'SDGs Project 4개' · 'Solution Challenge 2024 프로젝트 9개' = projects.json 에서 그 기수 · 그 프로그램 줄 수
+        // 'Solution Challenge 2026 프로젝트 4개' · 'Solution Challenge 2024 프로젝트 9개' = projects.json 에서 그 기수 · 그 프로그램 줄 수
         const proj = h.match(/^(.+?) (?:프로젝트 )?(\d+)개$/)
         if (proj && PROJECTS.some((p) => p.program === proj[1])) {
           expect(PROJECTS.filter((p) => p.generation === g.n && p.program === proj[1]).length, where).toBe(Number(proj[2]))
