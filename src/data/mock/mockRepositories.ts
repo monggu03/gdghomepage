@@ -6,6 +6,7 @@ import { ARCHIVE, PREVIEWS, REVIEWS, SCHEDULE, STATS } from './fixtures'
 export function createMockRepositories(): Repositories {
   return {
     schedule: { list: async () => SCHEDULE.map((e) => ({ ...e })) },
+    projects: { list: async () => [] },
     stats: { list: async () => STATS.map((s) => ({ ...s })) },
     previews: { latest: async (place, limit) => PREVIEWS[place].slice(0, limit).map((p) => ({ ...p })) },
     reviews: { list: async () => REVIEWS.map((r) => ({ ...r })) },

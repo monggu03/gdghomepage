@@ -1,0 +1,169 @@
+/* 장소 미리보기: 떠 있는 것이라 그림자만, 테두리 없음 (DESIGN 4장) */
+.pop,
+.sheet {
+  background: var(--paper);
+  color: var(--ink-900);
+  box-shadow: var(--shadow-float);
+}
+
+.pop {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  width: 340px;
+  max-width: calc(100% - 32px);
+  padding: 14px 20px 16px;
+  border-radius: var(--r-card);
+  visibility: hidden; /* 자리를 재기 전 한 프레임 */
+}
+.pop[data-placed] {
+  visibility: visible;
+  animation: pop var(--dur-open) var(--ease);
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* 폰: 아래에서 올라오는 시트 */
+.sheet {
+  position: fixed;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(72vh, 560px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px max(20px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  animation: sheetUp var(--dur-sheet) var(--ease);
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+.head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 10px;
+}
+.head > :global(.mark) {
+  margin-top: 11px;
+}
+.titles {
+  padding-top: 0;
+}
+.title {
+  font: var(--t-h3);
+  letter-spacing: var(--ls-h3);
+}
+.title:focus {
+  outline: none; /* 프로그램으로 옮긴 초점. 키보드 사용자는 다음 Tab 부터 파란 링을 본다 */
+}
+.sub {
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px -12px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--subtle);
+}
+.close svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--ink-700);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.desc {
+  margin-top: 10px;
+  font: 400 15px/24px var(--font-kr);
+  color: var(--ink-700);
+}
+
+.list {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.row,
+.state,
+.skeleton {
+  min-height: 44px;
+  border-bottom: 1px solid var(--line);
+}
+.row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+}
+.when {
+  font: var(--t-meta);
+  color: var(--ink-700);
+  white-space: nowrap;
+}
+.what {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font: 600 15px/22px var(--font-kr);
+  color: var(--ink-900);
+}
+.state {
+  display: flex;
+  align-items: center;
+  font: 400 15px/22px var(--font-kr);
+  color: var(--ink-700);
+}
+.skeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.skeleton i {
+  height: 10px;
+  border-radius: 2px;
+  background: var(--subtle);
+}
+.skeleton i:first-child {
+  width: 64px;
+}
+.skeleton i:last-child {
+  flex: 1;
+}
+
+.foot {
+  margin-top: 12px;
+}
+.foot :global(.link) {
+  min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop[data-placed],
+  .sheet {
+    animation: none;
+  }
+}

@@ -1,4 +1,8 @@
-/* 캠퍼스 지도. 색은 styles/tokens.css 의 토큰을 쓴다 */
+/*
+ * 캠퍼스 지도. 색은 styles/tokens.css 의 토큰을 쓴다 (docs/DESIGN.md §9).
+ * - 벽은 중립색(--wall-*), 장소색은 지붕 · 화면 틀 · 차양 · 톱니창 틀 · 문틀에만 (컴포넌트에서 칠함)
+ * - 빛은 왼쪽 위 한 방향. 꾸밈용 빛 번짐(drop-shadow) 없음
+ */
 .scene {
   position: absolute;
   inset: 0;
@@ -8,56 +12,126 @@
   touch-action: manipulation;
 }
 
-/* 바닥 */
-.gndT { fill: var(--scene-ground-top); }
-.gndL { fill: var(--scene-ground-left); }
-.gndR { fill: var(--scene-ground-right); }
-.gndEdge { stroke: #ffffff; }
-.grass { fill: var(--scene-grass); stroke: var(--scene-grass-line); }
+/* 땅: 종이와 같은 흰색. 회색 땅이면 위아래 흰 바탕과 만나 '받침판' 띠처럼 보인다 (DESIGN 9장: 받침판 없이).
+   길 · 잔디 · 광장만 색이 있어 화면 밖으로 이어진다 */
+.ground { fill: var(--paper); }
+.lawn {
+  fill: var(--scene-grass);
+  stroke: var(--scene-grass-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
 .walk { fill: var(--scene-walk); }
-.plaza { fill: var(--scene-plaza); stroke: var(--scene-plaza-line); }
-.plazaRing { fill: none; stroke: var(--scene-plaza-line); }
-.plT { fill: var(--scene-plinth-top); }
-.plL { fill: var(--scene-plinth-left); }
-.plR { fill: var(--scene-plinth-right); }
+.plaza {
+  fill: var(--scene-plaza);
+  stroke: var(--scene-plaza-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.plazaRing {
+  fill: none;
+  stroke: var(--scene-plaza-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
 
-/* 건물 · 깃발 */
+/* 벽 · 받침 (중립색). 바닥과 색이 비슷해서 1px 테두리로 또렷하게 */
+.wallT { fill: var(--wall-top); }
+.wallL { fill: var(--wall-left); }
+.wallR { fill: var(--wall-right); }
+.padT { fill: var(--scene-plaza); }
+.padL { fill: var(--wall-left); }
+.padR { fill: var(--wall-right); }
+.edge {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.shadow { fill: rgba(25, 27, 31, 0.06); }
+.mullionL { stroke: var(--wall-left); stroke-width: 1.6; }
+.mullionR { stroke: var(--wall-right); stroke-width: 1.6; }
+.door { fill: var(--ink-700); }
+
+/* 강당 지붕 위 발표 화면 */
+.screen { fill: var(--paper); }
+.slideTitle { fill: var(--ink-500); }
+.slideLine { fill: var(--line-strong); }
+
+/* 나무: 잔디(--scene-grass)보다 진하지만 장소색 초록(--place-recruits)과는 다른 차분한 초록 */
+.treeShadow { fill: rgba(25, 27, 31, 0.07); }
+.trunk { fill: #a3907c; }
+.crown { fill: #8cc1a1; }
+.crownLit { fill: #acd5bb; }
+.crownShade { fill: #6fa68a; }
+
+/* 깃발: 기수색 천 + 먹색 숫자 */
+.pole { stroke: var(--ink-500); stroke-width: 2; stroke-linecap: round; }
+.finial { fill: var(--ink-500); }
+.cloth { fill: var(--gen); }
+.clothNum { fill: none; stroke: var(--on-gen); stroke-width: 2.6; stroke-linecap: butt; stroke-linejoin: miter; }
+/* 세션에 한 번, 깃발이 화면에 들어오면 천이 깃대를 따라 올라간다. 튕김 없음 */
+.lowered { transform: translateY(var(--drop, 40px)); }
+.raise { animation: raise 700ms ease 160ms both; }
+@keyframes raise {
+  from { transform: translateY(var(--drop, 40px)); }
+  to { transform: translateY(0); }
+}
+
+/* 건물 · 깃발 (누르는 것) */
 .bld {
   cursor: pointer;
-  transition: transform 0.25s ease, opacity 0.3s ease;
+  outline: none;
+  transition: opacity var(--dur-open) var(--ease);
 }
-.hov { transform: translateY(-6px); }
-.sel { filter: drop-shadow(0 10px 12px rgba(30, 50, 110, 0.25)); }
-/* 검색에 걸린 건물: 깜빡이지 않는 빛 (매 프레임 다시 그리지 않게) */
-.hit { filter: drop-shadow(0 0 10px var(--glow)); }
-.bld:focus-visible { outline: 3px solid var(--g-blue); outline-offset: 4px; }
+.lift { transition: transform var(--dur-hover) var(--ease); }
+.hov .lift,
+.sel .lift { transform: translateY(-4px); }
+.bld:focus-visible { outline: 2px solid var(--g-blue); outline-offset: 4px; }
 .dim { opacity: 0.32; }
-.flag {
-  transform-box: fill-box;
-  transform-origin: left center;
-  animation: wave 2.2s ease-in-out infinite;
-}
 
-/* 이름표 핀: 평소엔 가만히, 호버 때만 올라온다 */
-.pin { cursor: pointer; transition: opacity 0.3s ease; }
-.lift { transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1); }
-.pinLift .lift { transform: translateY(-9px); }
-.markerHole { fill: #ffffff; }
-.chip { fill: #ffffff; stroke-width: 1.2; }
-.pinSel .chip { stroke-width: 2.6; }
-.chipText { font: 600 13px var(--font-display); fill: var(--ink); }
-.liveBg { fill: var(--ink); }
-.liveDot { fill: var(--g-green); }
-.liveText { font: 600 11px var(--font-kr); fill: #ffffff; }
-.countBg { fill: var(--ink); }
-.countText { font: 700 11px var(--font-display); fill: #ffffff; }
-
-@keyframes wave {
-  0%, 100% { transform: skewY(0); }
-  50% { transform: skewY(-6deg) scaleX(0.94); }
+/* 안내판: 1px 지시선 + 흰 판. 고르거나 마우스를 올리면 먹색으로 뒤집힌다 */
+.sign { transition: opacity var(--dur-open) var(--ease); }
+.leader {
+  stroke: var(--ink-900);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
+.leaderFoot { fill: var(--ink-900); pointer-events: none; }
+.plate { cursor: pointer; }
+.plateBg {
+  fill: var(--paper);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: fill var(--dur-hover) var(--ease), stroke var(--dur-hover) var(--ease);
+}
+.plateText {
+  font: 600 15px var(--font-kr);
+  letter-spacing: 0;
+  fill: var(--ink-900);
+  transition: fill var(--dur-hover) var(--ease);
+}
+.signOn .plateBg { fill: var(--ink-900); stroke: var(--ink-900); }
+.signOn .plateText { fill: var(--paper); }
+/* 소개 장소의 표식은 먹색이라, 판이 먹색이 되면 흰색으로 */
+.markInk { fill: var(--place-about); }
+.signOn .markInk { fill: var(--paper); }
+/* 검색에 걸린 장소: 빛나지 않고 테두리만 진하게 */
+.signHit .plateBg { stroke: var(--ink-900); stroke-width: 2; }
+.badgeBg { fill: var(--ink-900); }
+/* 건수 글자: 안내판 이름과 같은 15px 로 그려서, 폰에서 판이 줄어도(배율 ≥ 13/15) 화면에서 13px 아래로 내려가지 않는다 */
+.badgeText { font: 700 15px var(--font-num); fill: var(--paper); }
+.signOn .badgeBg { fill: var(--paper); }
+.signOn .badgeText { fill: var(--ink-900); }
 
 @media (prefers-reduced-motion: reduce) {
-  .flag { animation: none; }
-  .bld, .lift { transition: none; }
+  .raise { animation: none; }
+  .lowered { transform: none; }
+  .bld,
+  .lift,
+  .sign,
+  .plateBg,
+  .plateText { transition: none; }
 }

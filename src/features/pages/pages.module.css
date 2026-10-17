@@ -1,67 +1,726 @@
+/*
+ * 하위 페이지 공통 (커뮤니티 · 프로젝트 · 지원 안내 · 준비 중 · 오류).
+ * docs/DESIGN.md: 흰 종이 + 1px 괘선 + 간격. 12칸 격자에서 섹션 머리는 1–3칸, 내용은 4–12칸.
+ * 1024 미만은 위아래로 쌓는다 (3칸이 섹션 제목을 담기에 좁다).
+ */
+
 .page {
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px var(--gutter-r) 40px var(--gutter-l);
+  /* 아래 여백은 꼬리말의 위 여백이 맡는다 */
+  padding-bottom: 0;
+}
+
+/* ── 페이지 머리 ── */
+.head {
   display: grid;
-  gap: 40px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  align-items: baseline;
+  padding-top: 64px;
 }
-.head { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; padding-top: 24px; }
-.head h1 { font: 700 40px/1.1 var(--font-display); letter-spacing: -0.02em; }
-.head p { color: var(--ink-sub); margin-top: 6px; }
-.head > div { flex: 1 1 auto; min-width: 0; }
-.swatch { width: 44px; height: 44px; border-radius: 12px; flex: none; }
-.lead { margin-top: -16px; font-size: 18px; line-height: 1.7; color: var(--ink-body); max-width: 40em; }
-.block h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font: 700 24px var(--font-display); margin-bottom: 16px; }
-.block h3 { font: 700 16px var(--font-kr); margin: 20px 0 8px; }
-.state { color: var(--ink-sub); }
-.list { display: grid; gap: 8px; }
-.list li { position: relative; padding-left: 18px; color: var(--ink-body); }
-.list li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
-.notes { padding: 24px; border: 1px dashed var(--line); border-radius: var(--radius-card); }
-
-.previewGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-/* 아직 썸네일이 없으므로 글자 카드로. 위쪽 색 띠로 장소를 구분한다 */
-.previewCard {
-  position: relative;
-  overflow: hidden;
-  min-width: 0;
-  padding: 20px 18px 18px;
-  border: 1px solid var(--hair);
-  border-radius: var(--radius-card);
-  background: var(--surface-solid);
-}
-.previewCard::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--c); }
-.previewCard b { display: block; margin-top: 8px; font: 700 17px/1.35 var(--font-kr); }
-.previewMeta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--ink-sub); }
-.tag { font-weight: 700; color: var(--ink); }
-
-/* Recruits 지원 안내 */
-.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; }
-.facts > div { padding: 20px; border: 1px solid var(--hair); border-radius: var(--radius-card); background: var(--surface-solid); min-width: 0; }
-.facts dt { font: 700 14px var(--font-display); color: var(--ink-sub); }
-.facts dd { margin: 6px 0 0; font-size: 16px; line-height: 1.6; color: var(--ink); }
-.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-.primary, .secondary {
-  display: inline-flex;
+.eyebrow {
+  grid-column: 1 / -1;
+  display: flex;
   align-items: center;
-  min-height: 48px;
-  padding: 0 22px;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
+  gap: 10px;
+  margin-bottom: 20px;
+  font: var(--t-ui);
+  color: var(--ink-700);
+}
+.title {
+  grid-column: 1 / span 3;
+  font: var(--t-h1);
+  letter-spacing: var(--ls-h1);
+}
+.lead {
+  grid-column: 4 / -1;
+  max-width: 38em;
+  font: var(--t-lead);
+  letter-spacing: -0.01em;
+  color: var(--ink-900);
+}
+.meta {
+  grid-column: 4 / -1;
+  margin-top: 20px;
+  font: var(--t-meta);
+  color: var(--ink-500);
+}
+.headWide .title {
+  grid-column: 1 / span 9;
+}
+.headWide .lead,
+.headWide .meta {
+  grid-column: 1 / span 8;
+}
+.headWide .lead {
+  margin-top: 16px;
+}
+
+/* ── 섹션 ── */
+.section {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  margin-top: var(--gap-section-near);
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.sectionHead {
+  grid-column: 1 / span 3;
+  align-self: start;
+  padding-right: 8px;
+}
+.sectionHead h2 {
+  font: var(--t-h2);
+  letter-spacing: var(--ls-h2);
+}
+.sectionHead p {
+  margin-top: 10px;
+  font: 400 15px/24px var(--font-kr);
+  color: var(--ink-700);
+}
+.sectionBody {
+  grid-column: 4 / -1;
+  min-width: 0;
+}
+/* 마지막 짧은 안내: 제목을 한 단계 작게 */
+.sectionQuiet .sectionHead h2 {
+  font: var(--t-h3);
+  letter-spacing: var(--ls-h3);
+}
+
+@media (min-width: 1024px) and (min-height: 640px) {
+  .sticky {
+    position: sticky;
+    top: 96px; /* 머리말 64 + 32 */
+  }
+}
+
+.state {
+  max-width: 38em;
+  color: var(--ink-700);
+}
+.note {
+  max-width: 38em;
+  color: var(--ink-700);
+}
+/* 문장 안의 링크: 줄 높이는 그대로 두고, 위아래 안쪽 여백으로 누르는 자리만 24px 이상으로 */
+.inlineLink {
+  padding-block: 4px;
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.inlineLink:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* 바깥 링크: 밑줄은 글자에만, 화살표 ↗ 는 밑줄 밖 */
+.ext {
+  text-decoration: none !important;
+}
+.extText {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.ext:hover .extText {
+  text-decoration-thickness: 2px;
+}
+.arrow {
+  display: inline-block;
+  margin-left: 0.2em;
+}
+
+/* ── 일정 · 행사 줄 ── */
+.rows {
+  border-top: 1px solid var(--ink-900);
+  --end: 5.5em;
+}
+/* 끝 칸에 ↗ 하나뿐인 목록 */
+.rowsCompact {
+  --end: 1.5em;
+}
+.rows > li {
+  border-bottom: 1px solid var(--line);
+}
+.row {
+  display: grid;
+  grid-template-columns: 8.5em minmax(0, 1fr) 7.5em var(--end);
+  grid-template-areas: 'date main kind end';
+  column-gap: 24px;
+  align-items: baseline;
+  padding: 15px 0 14px;
+}
+/* 원래 행사 페이지가 있는 줄: 줄 전체가 링크 */
+.rowLink {
+  color: inherit;
   text-decoration: none;
 }
-.primary { background: var(--ink); color: #fff; }
-.secondary { border: 1px solid var(--line); background: var(--surface-solid); }
-
-.back { justify-self: start; display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; text-decoration: none; }
-.back:hover { text-decoration: underline; }
-
-@media (max-width: 900px) {
-  .previewGrid, .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .head h1 { font-size: 32px; }
-  .lead { font-size: 16px; }
+.rowLink:hover .rowTitle {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
-@media (max-width: 520px) {
-  .previewGrid, .facts { grid-template-columns: 1fr; }
+.rowLink:hover .rowArrow {
+  color: var(--ink-900);
+}
+.rowLink:focus-visible {
+  outline-offset: 0;
+}
+.rowDate {
+  grid-area: date;
+  font-size: 15px;
+  line-height: 26px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+.nowrap {
+  white-space: nowrap;
+}
+.rowMain {
+  grid-area: main;
+  min-width: 0;
+}
+.rowTitle {
+  display: block;
+  font: 600 17px/26px var(--font-kr);
+  letter-spacing: -0.005em;
+}
+.rowSub {
+  display: block;
+  margin-top: 2px;
+  font: 400 14px/22px var(--font-kr);
+  color: var(--ink-700);
+}
+.rowKind {
+  grid-area: kind;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--t-meta);
+  color: var(--ink-700);
+  white-space: nowrap;
+}
+.rowEnd {
+  grid-area: end;
+  justify-self: end;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: right;
+}
+.rowArrow {
+  font: 500 13px/20px var(--font-num);
+  color: var(--ink-500);
+  transition: color var(--dur-hover) var(--ease);
+}
+.until {
+  font-size: 15px;
+  line-height: 26px;
+  font-weight: 500;
+  color: var(--ink-900);
+  white-space: nowrap;
+}
+
+/* ── 거르기: 붙어 있는 칸 하나짜리 조작부 ── */
+.filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.filterLabel {
+  flex: none;
+  width: 2.5em;
+  font: var(--t-meta);
+  color: var(--ink-500);
+}
+/* 넘치면 가로로 민다 (폰). 스크롤바는 숨기고, 화면 끝까지 이어 잘린 칸이 보이게 한다 */
+.scroller {
+  position: relative; /* 안의 visually-hidden(절대 위치)이 페이지 폭을 넓히지 않게 */
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+.segmented {
+  display: inline-flex;
+  vertical-align: top;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  overflow: hidden;
+}
+.segmented button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--paper);
+  font: var(--t-ui);
+  color: var(--ink-700);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease);
+}
+.segmented button + button {
+  border-left: 1px solid var(--line);
+}
+.segmented button:hover {
+  color: var(--ink-900);
+  background: var(--subtle);
+}
+.segmented button[aria-pressed='true'] {
+  background: var(--ink-900);
+  color: #fff;
+}
+.segmented button[aria-pressed='true'] + button {
+  border-left-color: var(--ink-900);
+}
+.segmented button:focus-visible {
+  outline-offset: -3px;
+}
+.count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-500);
+}
+button[aria-pressed='true'] .count {
+  color: #c9cdd2;
+}
+.resultLine {
+  margin: -8px 0 24px;
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.resultLine :global(.link) {
+  min-height: 28px;
+  margin-left: 8px;
+  font: var(--t-meta);
+  vertical-align: middle;
+}
+
+/* ── 기수 묶음 ── */
+.gens {
+  display: grid;
+  gap: 56px;
+}
+.genHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding-bottom: 12px;
+}
+.genHead h3 {
+  font: var(--t-h3);
+  letter-spacing: var(--ls-h3);
+}
+.genMeta {
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.genSummary {
+  max-width: 38em;
+  margin: -4px 0 16px;
+  font: 400 15px/24px var(--font-kr);
+  color: var(--ink-700);
+}
+.genCount {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+.gens .more {
+  margin-top: 8px;
+  min-height: 44px;
+}
+
+/* ── 날짜 단계 줄 (G-Sprint) ── */
+.rail {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  margin-top: 28px;
+}
+.railStep {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding-top: 24px;
+  padding-right: 8px;
+}
+/* 다음 단계까지 잇는 선: 지난 구간은 진하게 */
+.railStep::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 1px;
+  background: var(--line-strong);
+}
+.railStep[data-state='done']::before {
+  top: 3px;
+  height: 2px;
+  background: var(--ink-900);
+}
+.railStep:last-child::before {
+  display: none;
+}
+.railMark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--ink-500);
+}
+.railStep[data-state='done'] .railMark {
+  background: var(--ink-900);
+  box-shadow: none;
+}
+.railStep[data-state='next'] .railMark {
+  background: var(--c);
+  box-shadow: none;
+}
+.railLabel {
+  font: 600 15px/22px var(--font-kr);
+}
+.railStep[data-state='later'] .railLabel {
+  color: var(--ink-700);
+}
+.railWhen {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+.railNote {
+  margin-top: 4px;
+  font: 600 13px/20px var(--font-num);
+  color: var(--ink-900);
+}
+
+/* ── 기간 줄 그림 (지난 모집) ── */
+.strip {
+  padding: 4px 0 28px;
+}
+/* 줄 하나 = 막대 12 + 이름 20 + 사이 12 */
+.stripTrack {
+  position: relative;
+  height: calc(64px + (var(--lanes, 1) - 1) * 44px);
+  border-bottom: 1px solid var(--ink-900);
+}
+/* 축 양 끝 날짜 · 달이 바뀌는 눈금은 축 아래에 */
+.stripEnd,
+.stripMonth span {
+  position: absolute;
+  top: calc(100% + 8px);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink-500);
+  white-space: nowrap;
+}
+.stripEnd {
+  left: 0;
+}
+.stripEndR {
+  left: auto;
+  right: 0;
+}
+.stripMonth {
+  position: absolute;
+  top: 12px;
+  bottom: -6px;
+  border-left: 1px dashed var(--line-strong);
+}
+.stripMonth span {
+  top: calc(100% + 2px);
+  left: 6px;
+}
+.stripBox {
+  position: absolute;
+  bottom: calc(var(--lane, 0) * 44px);
+  height: 12px;
+  min-width: 12px;
+  background: var(--ink-900);
+  border-radius: 2px 2px 0 0;
+}
+/* 하루짜리(OT)는 네모 하나 */
+.stripBox[data-point] {
+  width: 12px !important;
+}
+.stripLabel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  font: 600 13px/20px var(--font-kr);
+  color: var(--ink-900);
+  white-space: nowrap;
+}
+.stripBox[data-point] .stripLabel {
+  left: auto;
+  right: 0;
+}
+
+/* ── 사실 목록 (준비 중) ── */
+.facts {
+  border-top: 1px solid var(--ink-900);
+}
+.facts > div {
+  display: grid;
+  grid-template-columns: 8.5em minmax(0, 1fr);
+  column-gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.facts dt {
+  font: 600 15px/28px var(--font-kr);
+  color: var(--ink-700);
+}
+.facts dd {
+  margin: 0;
+  font: var(--t-body);
+}
+
+/* ── 갈 수 있는 곳 (준비 중 · 404) ── */
+.destinations {
+  border-top: 1px solid var(--ink-900);
+}
+.destination {
+  display: grid;
+  grid-template-columns: 8.5em minmax(0, 1fr);
+  column-gap: 24px;
+  align-items: baseline;
+  min-height: 56px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+}
+.destName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 17px/26px var(--font-kr);
+}
+.destDesc {
+  font: 400 15px/24px var(--font-kr);
+  color: var(--ink-700);
+}
+.destination:hover .destName {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* 상태 글자 ('준비 중'): 바탕 없이 1px 테두리 */
+.statusTag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-tag);
+  font: var(--t-meta);
+  color: var(--ink-700);
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+/* 팀 내부 메모 (개발 화면만) */
+.notes {
+  padding: 20px 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-card);
+  color: var(--ink-700);
+}
+.notes h3 {
+  font: 600 15px/22px var(--font-kr);
+  color: var(--ink-900);
+}
+.notes h3 + ul {
+  margin: 8px 0 16px;
+}
+.notes li {
+  font: 400 15px/24px var(--font-kr);
+}
+.notes li::before {
+  content: '– ';
+}
+
+.path {
+  font: 500 13px/20px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink-900);
+  padding: 1px 6px;
+  border-radius: var(--r-tag);
+  background: var(--subtle);
+}
+
+/* ── 오류 화면 (머리말 없이 혼자) ── */
+.errorMain {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: 24px;
+}
+.errorBrand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 700 17px/1 var(--font-num);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+.errorActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+  margin-top: 40px;
+}
+
+/* ── 태블릿 · 폰: 섹션 머리를 내용 위로 ── */
+@media (max-width: 1023px) {
+  .head {
+    display: block;
+    padding-top: 48px;
+  }
+  .lead {
+    margin-top: 16px;
+  }
+  .section {
+    display: block;
+    padding-top: 24px;
+  }
+  .sectionHead {
+    margin-bottom: 28px;
+    padding-right: 0;
+    max-width: 38em;
+  }
+}
+
+@media (max-width: 767px) {
+  .head {
+    padding-top: 32px;
+  }
+  .eyebrow {
+    margin-bottom: 14px;
+  }
+  .meta {
+    margin-top: 16px;
+  }
+  .sectionHead p {
+    margin-top: 6px;
+  }
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'date kind end'
+      'main main main';
+    column-gap: 12px;
+    row-gap: 4px;
+    align-items: center;
+    padding: 14px 0;
+  }
+  .rowDate {
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .rowKind {
+    justify-self: start;
+  }
+  .rowTitle {
+    font-size: 16px;
+    line-height: 25px;
+  }
+  .until {
+    font-size: 14px;
+  }
+  .filterRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .filterLabel {
+    width: auto;
+  }
+  /* 오른쪽은 화면 끝까지 이어, 밀어 볼 칸이 잘려 보이게 한다 */
+  .scroller {
+    max-width: none;
+    margin-right: calc(-1 * var(--side-r));
+    padding-right: var(--side-r);
+  }
+  .gens {
+    gap: 44px;
+  }
+  .rail {
+    grid-template-columns: none;
+    grid-auto-flow: row;
+    margin-top: 24px;
+  }
+  .railStep {
+    grid-template-columns: 6.5em minmax(0, 1fr);
+    column-gap: 12px;
+    padding: 0 0 18px 24px;
+  }
+  .railStep::before,
+  .railStep[data-state='done']::before {
+    left: 4px;
+    right: auto;
+    top: 6px;
+    bottom: -6px;
+    width: 1px;
+    height: auto;
+  }
+  .railStep[data-state='done']::before {
+    left: 3px;
+    width: 2px;
+  }
+  .railMark {
+    top: 6px;
+  }
+  .railLabel {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .railWhen {
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 22px;
+  }
+  .railNote {
+    grid-column: 2;
+    margin-top: 0;
+  }
+  .facts > div,
+  .destination {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented button,
+  .rowArrow {
+    transition: none;
+  }
 }

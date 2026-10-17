@@ -1,136 +1,137 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { PAGE_PLANS, type PagePlan, type PagePlanId } from '@/config/pages'
-import { placeColor } from '@/config/places'
-import { RECRUIT_FACTS, SHOW_PLAN, SITE } from '@/config/site'
-import { usePreviews } from '@/data/queries'
-import type { PreviewPlace } from '@/data/repositories'
+import { NAV_ORDER, PLACE_BY_ID, navLabel, placeColor } from '@/config/places'
+import { SHOW_PLAN, SITE } from '@/config/site'
+import { CONTENT_UPDATED_AT } from '@/content'
+import type { PlaceId } from '@/domain/types'
 import { useToday } from '@/hooks/useToday'
-import { shortDate } from '@/lib/date'
+import { dateLabel } from './format'
+import { ExternalLink, Mark, PageHead, Section } from './PageParts'
 import s from './pages.module.css'
 
-function Preview({ place }: { place: PreviewPlace }) {
-  const today = useToday()
-  const { data, isPending, isError } = usePreviews(place, 6)
-  if (isError) return <p className={s.state}>최근 글을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.</p>
-  if (isPending) return <p className={s.state}>불러오는 중…</p>
-  if (data.length === 0) return <p className={s.state}>아직 올라온 글이 없습니다.</p>
+/** 지금 열려 있는 페이지와 그 페이지에서 볼 수 있는 것 */
+const OPEN_PAGES: Partial<Record<PlaceId, string>> = {
+  about: '캠퍼스 지도로 보는 GDGoC DGU 소개',
+  projects: 'G-Sprint 진행 상황과 지난 프로젝트',
+  community: '다가오는 일정과 기수별 행사 기록',
+  recruits: '모집 소식 · 지난 모집 기록 · 연락처',
+}
+
+/** 지금 볼 수 있는 페이지로 가는 줄 목록 (준비 중 · 찾을 수 없음 페이지 공통). 사이트 안 이동이라 화살표는 없다 */
+function Destinations() {
+  const ids = NAV_ORDER.filter((id) => OPEN_PAGES[id])
   return (
-    <ul className={s.previewGrid}>
-      {data.map((item) => (
-        <li key={item.id} className={s.previewCard} style={{ ['--c' as string]: placeColor(place) }}>
-          <div className={s.previewMeta}>
-            {item.tag && <span className={s.tag}>{item.tag}</span>}
-            <span>{item.date ? shortDate(item.date, today) : item.label}</span>
-            {item.sample && <span className="sample-badge">예시</span>}
-          </div>
-          <b>{item.title}</b>
+    <ul className={s.destinations}>
+      {ids.map((id) => (
+        <li key={id}>
+          <Link to={PLACE_BY_ID[id].path} className={s.destination}>
+            <span className={s.destName}>
+              <Mark color={placeColor(id)} />
+              {navLabel(id)}
+            </span>
+            <span className={s.destDesc}>{OPEN_PAGES[id]}</span>
+          </Link>
         </li>
       ))}
     </ul>
   )
 }
 
-/** Recruits: 확인된 사실만 보여주고, 정해지지 않은 건 '공지 예정'으로 둔다 */
-function RecruitInfo() {
-  return (
-    <section className={s.block} aria-labelledby="recruit-info">
-      <h2 id="recruit-info">지원 안내</h2>
-      <dl className={s.facts}>
-        {RECRUIT_FACTS.map((f) => (
-          <div key={f.id}>
-            <dt>{f.label}</dt>
-            <dd>{f.body}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className={s.actions}>
-        <a className={s.primary} href={SITE.links.instagram} target="_blank" rel="noreferrer">
-          인스타그램에서 소식 받기 ↗
-        </a>
-        <a className={s.secondary} href={SITE.links.linktree} target="_blank" rel="noreferrer">
-          모든 링크 ↗
-        </a>
-      </div>
-    </section>
-  )
-}
-
-/** 팀 내부용 기획 메모. 외부 방문자에게는 보이지 않는다 (SHOW_PLAN) */
+/** 팀 내부용 기획 메모. 외부 방문자에게는 보이지 않는다 (SHOW_PLAN: npm run dev 또는 VITE_SHOW_PLAN=true) */
 function PlanNotes({ id, plan }: { id: PagePlanId; plan: PagePlan }) {
   return (
-    <section className={`${s.block} ${s.notes}`} aria-labelledby={`${id}-plan`}>
-      <h2 id={`${id}-plan`}>
-        팀 기획 메모 <span className="sample-badge">와이어프레임 {plan.wireframe}</span>
-      </h2>
-      <h3>들어갈 기능</h3>
-      <ul className={s.list}>
-        {plan.features.map((f) => (
-          <li key={f}>{f}</li>
-        ))}
-      </ul>
-      {plan.open && (
-        <>
-          <h3>팀에서 정할 것</h3>
-          <ul className={s.list}>
-            {plan.open.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </>
-      )}
-    </section>
+    <Section id={`${id}-plan`} title="팀 기획 메모" desc={`개발 화면에서만 보입니다. 와이어프레임 ${plan.wireframe}`} quiet>
+      <div className={s.notes}>
+        <h3>들어갈 기능</h3>
+        <ul>
+          {plan.features.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+        {plan.open && (
+          <>
+            <h3>팀에서 정할 것</h3>
+            <ul>
+              {plan.open.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </Section>
   )
 }
 
 /**
- * 아직 만들지 않은 페이지. 방문자에게는 무엇이 올 곳인지와 최근 글을 보여준다.
- * 실제 페이지를 만들면 config/pages.ts 에서 지우고 라우터에 새 페이지를 연결한다.
+ * 아직 열지 않은 페이지 (/teams, /admin).
+ * 무엇이 될지(리드) · 지금 상태(준비 중) · 여는 시기(미정) · 먼저 알릴 곳 · 지금 볼 수 있는 곳만 적는다 (DESIGN 10장).
  */
 export function PlannedPage({ id }: { id: PagePlanId }) {
+  const today = useToday()
   const plan: PagePlan = PAGE_PLANS[id]
+  const color = plan.place ? placeColor(plan.place) : 'var(--ink-900)'
   return (
-    <div className={s.page}>
-      <header className={s.head}>
-        <span className={s.swatch} style={{ background: plan.place ? placeColor(plan.place) : 'var(--ink)' }} aria-hidden="true" />
-        <div>
-          <h1>{plan.title}</h1>
-          <p>{plan.sub}</p>
-        </div>
-        <span className="soon-badge">준비 중</span>
-      </header>
-      <p className={s.lead}>{plan.lead}</p>
+    <div className={`container ${s.page}`}>
+      <PageHead
+        mark={color}
+        eyebrow={plan.sub}
+        title={plan.title}
+        lead={plan.lead}
+        meta={
+          <>
+            <span className={s.statusTag}>준비 중</span> <span className="num">{dateLabel(CONTENT_UPDATED_AT, null, today)}</span> 기준
+          </>
+        }
+      />
 
-      {id === 'recruits' && <RecruitInfo />}
+      <Section id="status" title="지금 상태">
+        <dl className={s.facts}>
+          <div>
+            <dt>여는 시기</dt>
+            <dd>아직 정하지 않았습니다.</dd>
+          </div>
+          <div>
+            <dt>먼저 알리는 곳</dt>
+            <dd>
+              열리면{' '}
+              <ExternalLink href={SITE.links.instagram} className={s.inlineLink}>
+                인스타그램 {SITE.links.instagramHandle}
+              </ExternalLink>
+              에 가장 먼저 알립니다.
+            </dd>
+          </div>
+        </dl>
+      </Section>
 
-      {/* Recruits 는 위 '지원 안내'가 같은 내용을 담으므로 최근 글을 따로 두지 않는다 */}
-      {plan.place && id !== 'recruits' && (
-        <section className={s.block} aria-labelledby={`${id}-preview`}>
-          <h2 id={`${id}-preview`}>최근 글</h2>
-          <Preview place={plan.place} />
-        </section>
-      )}
+      <Section id="elsewhere" title="지금 볼 수 있는 곳" quiet>
+        <Destinations />
+      </Section>
 
       {SHOW_PLAN && <PlanNotes id={id} plan={plan} />}
-
-      <Link className={s.back} to="/">
-        ← 지도로 돌아가기
-      </Link>
     </div>
   )
 }
 
+/** 없는 주소. 머리말 · 꼬리말 안에서 보인다 */
 export function NotFoundPage() {
+  const { pathname } = useLocation()
   return (
-    <div className={s.page}>
-      <header className={s.head}>
-        <div>
-          <h1>페이지를 찾을 수 없습니다</h1>
-          <p>주소를 다시 확인해 주세요.</p>
-        </div>
-      </header>
-      <Link className={s.back} to="/">
-        ← 홈으로
-      </Link>
+    <div className={`container ${s.page}`}>
+      <PageHead
+        wide
+        eyebrow={<span className="num">404</span>}
+        title="이 주소에는 페이지가 없습니다"
+        lead="주소가 바뀌었거나 아직 만들지 않은 페이지입니다. 아래에서 찾던 곳을 골라 주세요."
+        meta={
+          <>
+            요청한 주소 <code className={s.path}>{pathname}</code>
+          </>
+        }
+      />
+      <Section id="elsewhere" title="갈 수 있는 곳">
+        <Destinations />
+      </Section>
     </div>
   )
 }

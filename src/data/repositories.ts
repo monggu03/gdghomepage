@@ -1,4 +1,4 @@
-import type { PlaceId, PreviewItem, Review, ScheduleEvent, SearchHit, Stat } from '@/domain/types'
+import type { PlaceId, PreviewItem, Project, Review, ScheduleEvent, SearchHit, Stat } from '@/domain/types'
 
 /**
  * 화면이 데이터를 가져오는 '창구' (Repository 패턴).
@@ -6,7 +6,12 @@ import type { PlaceId, PreviewItem, Review, ScheduleEvent, SearchHit, Stat } fro
  * 그래서 백엔드가 준비되면 컴포넌트를 고치지 않고 구현체만 갈아 끼우면 된다.
  */
 export interface ScheduleRepository {
+  /** 지난 행사와 다가오는 일정 모두 (날짜순 정렬은 화면이 lib/schedule 로 한다) */
   list(): Promise<ScheduleEvent[]>
+}
+
+export interface ProjectRepository {
+  list(): Promise<Project[]>
 }
 
 export interface StatsRepository {
@@ -32,6 +37,7 @@ export interface SearchService {
 
 export interface Repositories {
   schedule: ScheduleRepository
+  projects: ProjectRepository
   stats: StatsRepository
   previews: PreviewRepository
   reviews: ReviewRepository

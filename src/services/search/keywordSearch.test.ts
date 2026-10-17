@@ -3,9 +3,9 @@ import type { ArchiveDoc } from '@/domain/types'
 import { createKeywordSearch, rankDocs, tokenize } from './keywordSearch'
 
 const docs: ArchiveDoc[] = [
-  { id: 'a', place: 'community', title: 'Spring Boot 스터디', meta: '스터디', keywords: 'spring 백엔드 세미나' },
-  { id: 'b', place: 'community', title: 'Core Session #2', meta: '2026.10.06', keywords: '세션 세미나' },
-  { id: 'c', place: 'teams', title: '동지톤 팀원 모집', meta: '공모전', keywords: '해커톤' },
+  { id: 'a', place: 'community', title: '금융권 IT 현업자 세미나', meta: '2026.12.01 · 세션', keywords: 'spring 백엔드 금융' },
+  { id: 'b', place: 'community', title: 'Camping Seminar 2회', meta: '2025.10.31 · 세션', keywords: '캠핑 세미나 세션' },
+  { id: 'c', place: 'projects', title: 'G-Sprint 데모데이 · 성과공유회', meta: '2026.12.29', keywords: '해커톤 발표' },
 ]
 
 describe('keywordSearch', () => {
@@ -15,7 +15,7 @@ describe('keywordSearch', () => {
 
   it('제목에 맞는 글을 먼저 보여준다', () => {
     const hits = rankDocs(docs, 'Spring 세미나')
-    expect(hits.map((h) => h.doc.title)).toEqual(['Spring Boot 스터디', 'Core Session #2'])
+    expect(hits.map((h) => h.doc.title)).toEqual(['금융권 IT 현업자 세미나', 'Camping Seminar 2회'])
     expect(hits[0].score).toBe(3)
   })
 
@@ -26,6 +26,6 @@ describe('keywordSearch', () => {
 
   it('SearchService 모양으로 감싼다', async () => {
     const svc = createKeywordSearch(docs)
-    expect((await svc.search('해커톤'))[0].doc.place).toBe('teams')
+    expect((await svc.search('해커톤'))[0].doc.place).toBe('projects')
   })
 })

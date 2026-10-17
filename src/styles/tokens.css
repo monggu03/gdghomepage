@@ -1,70 +1,130 @@
 /*
- * GDGoC DGU 디자인 시스템 토큰 (인스타 카드 기준을 웹에 옮긴 것).
- * 규칙: 구글 4색은 도형·테두리에만, google-yellow 는 글자에 쓰지 않는다.
- *       4기 주황(gen4-orange)은 '4th' 표시에만 쓰고 글자는 on-orange(잉크색)로 올린다.
- * 밝은 화면 하나로 고정한다 (다크 모드를 따라가지 않음, 팀 피드백 2026-10-16).
+ * GDGoC DGU 디자인 토큰 — '캠퍼스 안내판' (docs/DESIGN.md)
+ * 색은 '어디'를 뜻한다: 장소색은 지도 지붕 · 장소 표식 · 일정 표식에만.
+ * 기수색(주황)은 '지금 기수' 표시에만, 그 위 글자는 ink-900.
+ * 밝은 화면 하나로 고정한다 (다크 모드를 따라가지 않음, 팀 결정 2026-10-16).
  */
 :root {
   color-scheme: light;
 
+  /* 바탕 · 선 */
   --paper: #ffffff;
-  --ink: #212121;
-  --ink-body: #3e3e3e;
-  --ink-sub: #514d4d;
-  --ink-faint: #b9b9b9; /* 장식용. 읽혀야 하는 글자에는 쓰지 않음 (대비 부족) */
-  --line: #c9c9c9;
+  --subtle: #f6f7f8;
+  --line: #e4e6e9;
+  --line-strong: #c9cdd2;
 
+  /* 글자 (ink-500 보다 옅은 글자는 쓰지 않는다: 흰 바탕 4.7:1) */
+  --ink-900: #191b1f;
+  --ink-700: #474c55;
+  --ink-500: #6e737c;
+
+  /* 장소색 = 구글 4색. 글자 · 테두리 · 면에는 쓰지 않는다 */
   --g-blue: #4285f4;
   --g-red: #ea4335;
   --g-yellow: #fbbc04;
   --g-green: #34a853;
-  --gen4-orange: #ff6309;
-  --on-orange: #212121;
+  --place-community: var(--g-blue);
+  --place-projects: var(--g-red);
+  --place-teams: var(--g-yellow);
+  --place-recruits: var(--g-green);
+  --place-about: var(--ink-900);
 
-  --blue-100: #dae2ee;
-  --blue-200: #abc7f4;
-  --blue-300: #699ef6;
-  --coral-100: #ffe8e6;
-  --coral-200: #ffa199;
-  --coral-400: #ff6c61;
-  --coral-500: #ff4a3c;
+  /* 기수색: 4기 주황. '지금 기수' 표시에만 */
+  --gen: #ff6309;
+  --on-gen: #191b1f;
 
-  /* 웹 표면 */
-  --bg: #ffffff;
-  --surface: #ffffff; /* 반투명 + blur 는 지도 위 프레임을 떨어뜨려서 뺐다 */
-  --surface-solid: #ffffff;
-  --hair: #e7e7e7;
-  --chip: #f3f3f3;
-  --shadow: 0 10px 30px rgba(33, 33, 33, 0.08), 0 1px 2px rgba(33, 33, 33, 0.05);
+  /* 떠 있는 것(지도 미리보기 · 바텀시트 · 검색 창)에만 */
+  --shadow-float: 0 12px 32px rgba(25, 27, 31, 0.14);
 
-  /* 지도 */
-  --scene-ground-top: #f8f9fc;
-  --scene-ground-left: #dde5f1;
-  --scene-ground-right: #c8d3e6;
-  --scene-grass: #e5f4e9;
-  --scene-grass-line: #d3eadb;
-  --scene-walk: #eef1f7;
-  --scene-plaza: #f8f9fb;
-  --scene-plaza-line: #dde1ea;
-  --scene-plinth-top: #eef1f6;
-  --scene-plinth-left: #e1e6ef;
-  --scene-plinth-right: #cdd4e2;
+  /* 글꼴: 한글 문장은 Pretendard, 숫자 덩어리 · 영문 워드마크만 Google Sans Flex */
+  --font-kr: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-num: 'Google Sans Flex', 'Pretendard Variable', Pretendard, sans-serif;
 
-  /* 글꼴: 영문·숫자는 Google Sans Flex, 한글은 Pretendard */
-  --font-display: 'Google Sans Flex', 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', sans-serif;
-  --font-kr: 'Pretendard Variable', Pretendard, 'Google Sans Flex', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  /* 글자 크기/줄 높이 (폰은 아래 미디어 쿼리에서 바뀐다) */
+  --t-display: 800 56px/72px var(--font-kr);
+  --t-h1: 700 40px/52px var(--font-kr);
+  --t-h2: 700 28px/38px var(--font-kr);
+  --t-h3: 700 20px/30px var(--font-kr);
+  --t-lead: 400 20px/34px var(--font-kr);
+  --t-body: 400 17px/28px var(--font-kr);
+  --t-ui: 600 15px/22px var(--font-kr);
+  --t-meta: 500 13px/20px var(--font-kr);
+  --t-num: 600 64px/64px var(--font-num);
+  --ls-display: -0.025em;
+  --ls-h1: -0.02em;
+  --ls-h2: -0.015em;
+  --ls-h3: -0.01em;
 
-  /* 모양 · 간격 (space-1~5 = 8/16/24/40/64) */
-  --radius-card: 20px;
-  --radius-photo: 36px;
+  /* 모양 */
+  --r-tag: 4px;
+  --r-control: 8px;
+  --r-card: 12px;
+
+  /* 간격: 묶음 안 / 묶음 사이 / 섹션 사이 */
+  --gap-in: 12px;
+  --gap-group: 40px;
+  --gap-section: 144px;
+  --gap-section-near: 96px;
+
+  /* 격자 */
+  --max: 1200px;
+  --gutter: 24px;
+  --side: max(40px, env(safe-area-inset-left, 0px));
+  --side-r: max(40px, env(safe-area-inset-right, 0px));
+
+  /* 움직임 */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-hover: 120ms;
+  --dur-open: 200ms;
+  --dur-sheet: 320ms;
+
+  /* 지도 (campus) */
+  --scene-ground: #f4f6f8;
+  --scene-grass: #e4f2e8;
+  --scene-grass-line: #d2e8d9;
+  --scene-walk: #ebeef2;
+  --scene-plaza: #f9fafb;
+  --scene-plaza-line: #dfe3e8;
+  --wall-top: #ffffff;
+  --wall-left: #eef0f2;
+  --wall-right: #dadde1;
+
+  /* ── 예전 이름 (아직 바꾸지 않은 화면용 별칭) ── */
+  --ink: var(--ink-900);
+  --ink-body: var(--ink-700);
+  --ink-sub: var(--ink-500);
+  --hair: var(--line);
+  --chip: var(--subtle);
+  --bg: var(--paper);
+  --surface: var(--paper);
+  --surface-solid: var(--paper);
+  --font-display: var(--font-num);
+  --gen4-orange: var(--gen);
+  --on-orange: var(--on-gen);
+  --radius-card: var(--r-card);
   --radius-pill: 999px;
-  --space-1: 8px;
-  --space-2: 16px;
-  --space-3: 24px;
-  --space-4: 40px;
-  --space-5: 64px;
+  --gutter-l: var(--side);
+  --gutter-r: var(--side-r);
+}
 
-  /* 화면 옆 여백 (폰 노치까지 고려) */
-  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
-  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+@media (max-width: 1279px) {
+  :root {
+    --gap-section: 120px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --t-display: 800 32px/42px var(--font-kr);
+    --t-h1: 700 26px/36px var(--font-kr);
+    --t-h2: 700 21px/30px var(--font-kr);
+    --t-h3: 700 18px/27px var(--font-kr);
+    --t-lead: 400 17px/28px var(--font-kr);
+    --t-body: 400 16px/26px var(--font-kr);
+    --t-num: 600 44px/44px var(--font-num);
+    --gap-section: 88px;
+    --gap-section-near: 64px;
+    --side: max(20px, env(safe-area-inset-left, 0px));
+    --side-r: max(20px, env(safe-area-inset-right, 0px));
+  }
 }

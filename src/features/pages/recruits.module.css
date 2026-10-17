@@ -1,0 +1,202 @@
+/* 지원 안내: 지금 상태 · 지난 모집 · 자주 묻는 질문 · 연락 */
+
+/* ── 지금 상태 ── */
+.status {
+  display: grid;
+  justify-items: start;
+  gap: 28px;
+}
+.message {
+  max-width: 38em;
+  font: var(--t-body);
+  color: var(--ink-900);
+}
+
+/* ── 지난 모집 ── */
+.steps {
+  margin-top: 56px;
+  border-top: 1px solid var(--ink-900);
+}
+.step {
+  display: grid;
+  grid-template-columns: 10em minmax(0, 1fr);
+  grid-template-areas:
+    'label when'
+    'label note'
+    'label source';
+  column-gap: 24px;
+  row-gap: 2px;
+  padding: 15px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.stepLabel {
+  grid-area: label;
+  font: 600 17px/26px var(--font-kr);
+}
+.stepWhen {
+  grid-area: when;
+  font-size: 15px;
+  line-height: 26px;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+.days {
+  margin-left: 12px;
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.stepNote {
+  grid-area: note;
+  font: var(--t-meta);
+  color: var(--ink-900);
+}
+.stepSource {
+  grid-area: source;
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.source {
+  color: var(--ink-700);
+}
+/* 작은 글자 안의 출처 링크도 누르는 높이는 24 이상 */
+.source a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+/* ── 자주 묻는 질문 ── */
+.faq {
+  border-top: 1px solid var(--ink-900);
+}
+.faq > li {
+  border-bottom: 1px solid var(--line);
+}
+.qa summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 60px;
+  padding: 14px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.qa summary::-webkit-details-marker {
+  display: none;
+}
+.q {
+  flex: 1;
+  font: 600 17px/26px var(--font-kr);
+}
+.qa summary:hover .q {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+/* 더하기 → 빼기 */
+.sign {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.sign::before,
+.sign::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 2px;
+  background: var(--ink-900);
+  transition: transform var(--dur-open) var(--ease);
+}
+.sign::after {
+  transform: rotate(90deg);
+}
+.qa[open] .sign::after {
+  transform: rotate(0deg);
+}
+.a {
+  max-width: 38em;
+  padding: 0 0 20px;
+  color: var(--ink-700);
+}
+.aSource {
+  margin-top: 8px;
+  font: var(--t-meta);
+}
+
+/* ── 연락 ── */
+.contact {
+  border-top: 1px solid var(--ink-900);
+}
+.contact > div {
+  display: grid;
+  grid-template-columns: 8.5em minmax(0, 1fr);
+  column-gap: 24px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.contact dt {
+  font: 600 15px/24px var(--font-kr);
+  color: var(--ink-700);
+}
+.contact dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 20px;
+  margin: 0;
+  min-height: 44px;
+}
+.email {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.contact dd :global(.link) {
+  min-height: 44px;
+}
+.contactNote {
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+
+@media (max-width: 767px) {
+  .status {
+    gap: 24px;
+  }
+  .status :global(.btn-primary) {
+    width: 100%;
+  }
+  .steps {
+    margin-top: 48px;
+  }
+  .step {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'label'
+      'when'
+      'note'
+      'source';
+  }
+  .contact > div {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+    padding: 12px 0 4px;
+  }
+  .contact dd {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sign::before,
+  .sign::after {
+    transition: none;
+  }
+}

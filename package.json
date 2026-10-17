@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:events": "node scripts/sync-events.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.3",

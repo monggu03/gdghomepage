@@ -10,6 +10,7 @@ import { useRepositories } from './useRepositories'
  */
 export const queryKeys = {
   schedule: ['schedule'] as const,
+  projects: ['projects'] as const,
   stats: ['stats'] as const,
   previews: (place: PreviewPlace, limit: number) => ['previews', place, limit] as const,
   reviews: ['reviews'] as const,
@@ -18,6 +19,11 @@ export const queryKeys = {
 export function useSchedule() {
   const repos = useRepositories()
   return useQuery({ queryKey: queryKeys.schedule, queryFn: () => repos.schedule.list() })
+}
+
+export function useProjects() {
+  const repos = useRepositories()
+  return useQuery({ queryKey: queryKeys.projects, queryFn: () => repos.projects.list() })
 }
 
 export function useStats() {

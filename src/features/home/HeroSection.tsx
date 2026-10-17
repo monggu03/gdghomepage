@@ -1,113 +1,130 @@
-import { useCallback, useMemo, useRef } from 'react'
-import { CampusScene } from '../campus/CampusScene'
-import { useSceneFit, type SceneLayout } from '../campus/useSceneFit'
-import { PlacePanel } from '../hud/PlacePanel'
-import { PlaceStrip } from '../hud/PlaceStrip'
-import { ScheduleCard } from '../hud/ScheduleCard'
-import { SprintTracker } from '../hud/SprintTracker'
-import { headerRect } from '../layout/headerAttr'
+import { useCallback, useRef, type KeyboardEvent, type MouseEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { SITE } from '@/config/site'
+import { useSchedule } from '@/data/queries'
+import { CampusScene } from '@/features/campus/CampusScene'
+import { useSceneFit, type SceneLayout } from '@/features/campus/useSceneFit'
+import { usePlacePreview, usePlacePreviewState } from '@/features/layout/placePreview'
 import { useIsNarrow, useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOffscreen } from '@/hooks/useOffscreen'
-import type { Box } from '@/lib/fit'
-import { HeroIntro } from './HeroIntro'
-import s from './home.module.css'
+import { useToday } from '@/hooks/useToday'
+import { ddayLabel } from '@/lib/date'
+import { dayLabel, nextEvent, sentences } from './homeData'
+import { PLACE_TRIGGER, PlacePopover } from './PlacePopover'
+import { PlaceLegend } from './PlaceLegend'
+import { scrollToSection } from './scrollTo'
+import s from './hero.module.css'
 
-/** 건물 · 이름표와 카드 사이에 띄울 거리 (px) */
-const PAD = 12
-/** 첫 화면 바닥은 흰색으로 흐려지므로 건물을 이만큼 위에 둔다 (px) */
-const FADE = 64
-/** 이 폭 이하에서는 화면 오른쪽 장소의 이름표를 왼쪽으로 돌린다 (오른쪽 카드에 잘리지 않게) */
-const FLIP_PINS_QUERY = '(max-width: 1100px)'
+export const PHONE_QUERY = '(max-width: 767px)'
+
+/** 지도 아래쪽 이만큼은 건물 · 이름표를 두지 않는다 (사람이 화면 밖에서 걸어 들어오는 길) */
+const BOTTOM_BAND = 48
 
 /**
- * 첫 화면: 소개 글 + 지도 + 지도 위 카드들.
- * 카드 배치는 여기서만 알고, 장면에는 카드 자리만 알려준다 (getLayout).
- * 장면은 건물 · 이름표가 카드에 가리지 않는 한 가장 크게 그려진다.
+ * 다음 일정 한 덩어리: 이름 · D-n · 날짜와 제목. h1 과 같은 줄 오른쪽에 둔다.
+ * 일정을 받기 전에도 자리(min-height)를 잡아 두어 받은 뒤에 화면이 밀리지 않는다.
+ * 멤버 수는 '기록' 섹션의 한 줄이 기준과 함께 맡는다.
+ */
+function NextUp() {
+  const today = useToday()
+  const { data, isPending } = useSchedule()
+  const next = data ? nextEvent(data, today) : null
+  return (
+    <div className={s.next} data-pending={isPending || undefined}>
+      {next && (
+        <p className={s.nextEvent}>
+          <span className={s.nextLabel}>다음 일정</span>
+          <span className={`num ${s.dday}`}>{ddayLabel(next.date, today)}</span>
+          <span className={s.nextTitle}>
+            <span className="num">{dayLabel(next.date, today)}</span> · {next.title}
+          </span>
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 첫 화면: 한 줄 소개(h1) | 다음 일정 → 소개 글 · 행동 → 지도(화면 끝까지) → 장소 범례.
+ * 지도 위에는 아무것도 얹지 않는다. 건물을 누르면 그 자리에서 미리보기가 열린다 (폰은 아래 시트).
  */
 export function HeroSection() {
   const narrow = useIsNarrow()
-  const flipPins = useMediaQuery(FLIP_PINS_QUERY)
-  const heroRef = useRef<HTMLElement>(null)
+  const phone = useMediaQuery(PHONE_QUERY)
+  const preview = usePlacePreview()
+  // 미리보기가 열렸을 때만 고른 장소의 안내판을 뒤집는다 (처음 들어왔을 때는 모두 흰 판)
+  const { open: previewOpen } = usePlacePreviewState()
   const svgRef = useRef<SVGSVGElement>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const introRef = useRef<HTMLDivElement>(null)
-  // 첫 화면이 화면 밖으로 나가면 반복 애니메이션(깃발, 진행 중 표시)을 멈춘다
-  const offscreen = useOffscreen(heroRef)
+  const frameRef = useRef<HTMLDivElement>(null)
+  // 지도가 화면 밖이면 반복 애니메이션(깃발, 진행 중 표시)을 멈춘다
+  const offscreen = useOffscreen(frameRef)
 
-  const sideRef = useRef<HTMLElement>(null)
-  const watch = useMemo(() => [introRef, trackRef, sideRef], [])
+  const getLayout = useCallback((svg: DOMRect): SceneLayout => {
+    const full = { x0: 8, y0: 8, x1: svg.width - 8, y1: svg.height - 8 }
+    const band = { x0: 0, y0: svg.height - BOTTOM_BAND, x1: svg.width, y1: svg.height }
+    return { bounds: full, prefer: { ...full, y1: band.y0 }, obstacles: [band] }
+  }, [])
+  const fit = useSceneFit(svgRef, getLayout, { narrow, flipPins: narrow, showLive: !narrow })
 
-  const getLayout = useCallback(
-    (svg: DOMRect): SceneLayout => {
-      if (narrow) {
-        const full = { x0: 6, y0: 6, x1: svg.width - 6, y1: svg.height - 6 }
-        return { bounds: full, prefer: full, obstacles: [] }
-      }
-      const rel = (el: Element | null): Box | null => {
-        if (!el) return null
-        const r = el.getBoundingClientRect()
-        return { x0: r.left - svg.left - PAD, y0: r.top - svg.top - PAD, x1: r.right - svg.left + PAD, y1: r.bottom - svg.top + PAD }
-      }
-      const header = headerRect()
-      const top = header ? header.bottom - svg.top + 8 : 80
-      const side = rel(sideRef.current)
-      // 오른쪽 카드 줄은 세로 전체를 한 덩어리로 본다: 장소마다 패널 높이가 달라도 지도가 흔들리지 않게
-      const sideBand = side && { x0: side.x0, y0: 0, x1: svg.width, y1: svg.height }
-      const fade = { x0: 0, y0: svg.height - FADE, x1: svg.width, y1: svg.height }
-      const obstacles = [sideBand, rel(introRef.current), rel(trackRef.current), fade].filter((b): b is Box => b !== null)
-      return {
-        // 땅은 카드 밑으로 들어가도 된다. 건물 · 이름표만 카드를 피한다
-        bounds: { x0: 8, y0: top, x1: svg.width - 8, y1: svg.height - 8 },
-        prefer: { x0: 24, y0: top, x1: sideBand ? sideBand.x0 : svg.width - 24, y1: svg.height - 16 },
-        obstacles,
-      }
-    },
-    [narrow],
-  )
-  const fit = useSceneFit(svgRef, getLayout, { narrow, flipPins, showLive: !flipPins, watch })
+  // 건물 · 이름표를 누르면(같은 장소를 다시 눌러도) 미리보기를 연다. 어떤 장소인지는 지도가 이미 골랐다
+  const onMapClick = (e: MouseEvent<HTMLDivElement>) => {
+    if ((e.target as Element).closest(PLACE_TRIGGER)) preview.show()
+  }
+  const onMapKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if ((e.key === 'Enter' || e.key === ' ') && (e.target as Element).closest(PLACE_TRIGGER)) preview.show()
+  }
 
   return (
-    <section ref={heroRef} className={s.hero} aria-labelledby="hero-title" data-paused={offscreen || undefined}>
-      <div className={`${s.blob} ${s.blobBlue}`} aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className={`${s.blob} ${s.blobCoral}`} aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
-      <div ref={introRef} className={s.introWrap}>
-        <HeroIntro titleId="hero-title" />
-      </div>
-      <CampusScene
-        svgRef={svgRef}
-        className={s.scene}
-        viewBox={fit.viewBox}
-        pinScale={fit.pinScale}
-        flipRightPins={flipPins}
-        compactPins={flipPins}
-        walkers={narrow ? 4 : 7}
-      />
-      {narrow && (
-        <div className={s.strip}>
-          <PlaceStrip />
+    <section className={s.hero} aria-labelledby="hero-title">
+      <div className={`container ${s.top}`}>
+        {/* 뜻으로 끊는다: 좁아지면 묶음(phrase) 사이에서만 줄이 바뀐다 */}
+        <h1 id="hero-title" className={s.title}>
+          <span className={s.phrase}>화요일마다 모여 배우고,</span>
+          <br />
+          <span className={s.phrase}>12월엔 직접 만든</span> <span className={s.phrase}>서비스를 배포합니다.</span>
+        </h1>
+        <div className={s.intro}>
+          <p className={s.lead}>
+            {sentences(SITE.pitch).map((line) => (
+              <span key={line} className={s.sentence}>
+                {line}{' '}
+              </span>
+            ))}
+          </p>
+          {/* 주 버튼은 하나: 지금 확정된 4기 일정. 5기 모집은 아직 미정이라 보조 링크로 */}
+          <div className={s.actions}>
+            <a
+              className="btn-primary"
+              href="#now"
+              onClick={(e) => {
+                e.preventDefault()
+                scrollToSection('now')
+              }}
+            >
+              {SITE.generation} 일정 보기
+            </a>
+            <Link className="link" to="/recruits">
+              5기 모집 안내
+            </Link>
+          </div>
         </div>
-      )}
-      <aside ref={sideRef} className={s.side} aria-label="장소 미리보기와 일정">
-        <div className={s.placeWrap}>
-          <PlacePanel />
-        </div>
-        <div className={s.schedWrap}>
-          <ScheduleCard />
-        </div>
-      </aside>
-      <div ref={trackRef} className={s.track}>
-        <SprintTracker />
+        <NextUp />
       </div>
+
+      {/* 지도는 화면 끝까지. 안의 건물이 키보드로 고를 수 있는 버튼이고, 아래 범례가 같은 메뉴를 글자로 준다 */}
+      <div ref={frameRef} className={s.map} data-paused={offscreen || undefined} onClick={onMapClick} onKeyDown={onMapKey}>
+        <CampusScene
+          svgRef={svgRef}
+          viewBox={fit.viewBox}
+          pinScale={fit.pinScale}
+          flipRightPins={narrow}
+          compactPins={narrow}
+          walkers={phone ? 2 : 6}
+          highlightSelected={previewOpen}
+        />
+        <PlacePopover frameRef={frameRef} sheet={phone} />
+      </div>
+      <PlaceLegend />
     </section>
   )
 }

@@ -44,7 +44,12 @@ export interface Place {
   footprint?: Footprint
 }
 
-export type EventKind = 'sprint' | 'event' | 'session' | 'notice' | 'rest'
+/**
+ * 일정 종류.
+ * session = 세션 · 세미나 · 스터디, event = 행사 · 연합 행사 · 해커톤, sprint = G-Sprint 단계,
+ * project = 프로젝트 발표 · 데모데이(G-Sprint 밖), recruit = 모집 · OT, notice = 공지, rest = 휴회
+ */
+export type EventKind = 'session' | 'event' | 'sprint' | 'project' | 'recruit' | 'notice' | 'rest'
 
 export interface ScheduleEvent {
   id: string
@@ -52,18 +57,75 @@ export interface ScheduleEvent {
   date: string
   /** 여러 날 행사의 마지막 날 */
   endDate?: string
+  /** 화면에 보이는 한글 제목 */
   title: string
   kind: EventKind
   /** 눌렀을 때 열 장소 */
   place: PlaceId
+  /** 몇 기 활동인지 (1, 2, 3, 4 …) */
+  generation?: number
+  /** 연속 행사 이름 (예: Camping Seminar) */
+  series?: string
+  /** 장소 (예: 신공학관 4142) */
+  venue?: string
+  /** 원래 게시된 제목 (gdg.community.dev 등) */
+  originalTitle?: string
+  /** 자세히 보기 주소 */
+  url?: string
+  /** 근거 (공개 페이지 주소 또는 '4기 운영 계획') */
+  source?: string
 }
 
-/** 첫 화면에 한 줄로 보여줄 숫자. 실제 값이 있을 때만 쓴다 (예시 숫자는 넣지 않는다) */
+/** 프로젝트 (GitHub GDSC-DGU 조직 등 공개 기록 기준) */
+export interface Project {
+  id: string
+  name: string
+  /** 한 줄 설명 (README 기준, 없으면 비움) */
+  summary?: string
+  /** 어떤 프로그램에서 만들었는지: 'Solution Challenge 2024', 'G-Sprint' … */
+  program: string
+  year: number
+  generation?: number
+  stack?: string[]
+  repo?: string
+  /** 서비스 주소 */
+  url?: string
+  status: 'done' | 'in-progress'
+  source?: string
+}
+
+/** 기수 연혁 */
+export interface Generation {
+  n: number
+  /** 그때 이름: 'GDSC DGU' | 'GDGoC DGU' */
+  name: string
+  /** 'YYYY-MM'. 첫 공개 행사(OT)가 있던 달. 공개 기록이 없으면 비운다 (1기) */
+  start?: string
+  /** 'YYYY-MM'. 마지막으로 확인된 공개 행사의 달. 지금 기수나 모르면 비운다 */
+  end?: string
+  /** 한 줄 요약 (확인된 사실만) */
+  summary: string
+  /** 대표 기록 2~4개 */
+  highlights: string[]
+  current?: boolean
+  source: string[]
+}
+
+export interface Faq {
+  id: string
+  q: string
+  a: string
+  source?: string
+}
+
+/** 숫자 하나. 실제 값과 기준(출처 · 날짜)이 있을 때만 쓴다 */
 export interface Stat {
   id: string
   label: string
   value: number
+  /** 기준: 'gdg.community.dev 기준 2026.10' */
   note?: string
+  source?: string
 }
 
 /** 장소 미리보기의 글 한 줄 */

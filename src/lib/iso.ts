@@ -9,6 +9,14 @@ export const TILE_H = 32
 
 export type Point3 = readonly [number, number, number?]
 
+/** 화면 위 사각형 (lib/fit.ts 의 Box 와 같은 모양) */
+export interface ScreenBox {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+}
+
 export function iso(x: number, y: number, z = 0): [number, number] {
   return [((x - y) * TILE_W) / 2, ((x + y) * TILE_H) / 2 - z * TILE_H]
 }
@@ -21,6 +29,34 @@ export function points(list: readonly Point3[]): string {
       return `${px.toFixed(1)},${py.toFixed(1)}`
     })
     .join(' ')
+}
+
+/** 점들이 화면에서 차지하는 사각형 */
+export function isoBounds(list: readonly Point3[]): ScreenBox {
+  let x0 = Infinity
+  let y0 = Infinity
+  let x1 = -Infinity
+  let y1 = -Infinity
+  for (const [x, y, z = 0] of list) {
+    const [px, py] = iso(x, y, z)
+    x0 = Math.min(x0, px)
+    y0 = Math.min(y0, py)
+    x1 = Math.max(x1, px)
+    y1 = Math.max(y1, py)
+  }
+  return { x0, y0, x1, y1 }
+}
+
+/** 상자(바닥 x,y,w,d · 높이 z0~z1)가 화면에서 차지하는 사각형 */
+export function boxBounds(x: number, y: number, w: number, d: number, z0: number, z1: number): ScreenBox {
+  return isoBounds([
+    [x, y + d, z0],
+    [x + w, y, z0],
+    [x + w, y + d, z0],
+    [x, y, z1],
+    [x + w, y, z1],
+    [x, y + d, z1],
+  ])
 }
 
 /** 색을 밝게(+) 또는 어둡게(-). amt 는 -1 ~ 1 */

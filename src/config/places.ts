@@ -13,7 +13,7 @@ export const PLACES: readonly Place[] = [
     sub: '소개',
     path: '/',
     color: '#212121',
-    description: '지도에서 건물을 누르면 각 메뉴를 미리 볼 수 있습니다. 광장의 깃발은 GDGoC DGU 소개입니다.',
+    description: '동국대학교 학생이 운영하는 Google Developer Groups on Campus 챕터입니다. 4기는 화요일 세션과 팀 프로젝트 G-Sprint로 움직입니다.',
   },
   {
     id: 'community',
@@ -31,7 +31,7 @@ export const PLACES: readonly Place[] = [
     path: '/projects',
     color: '#ea4335',
     live: true,
-    description: '실제 배포까지 가는 팀 프로젝트 G-Sprint. 12.29 데모데이에서 성과를 공유합니다.',
+    description: '4기 G-Sprint 팀 프로젝트와 지난 기수 프로젝트를 모읍니다. 4기 결과는 12.29 데모데이에서 공개합니다.',
     footprint: { x: 9.7, y: 0.9, w: 3.4, d: 3.2, h: 1.25, door: 'L', roof: 'saw', pinGap: 1.05 },
   },
   {
@@ -49,7 +49,7 @@ export const PLACES: readonly Place[] = [
     sub: '5기 모집',
     path: '/recruits',
     color: '#34a853',
-    description: '모집 일정과 지원 방법을 안내합니다.',
+    description: '모집 일정과 지원 방법, 지난 모집 과정을 안내합니다.',
     footprint: { x: 9.8, y: 9.8, w: 2.7, d: 2.7, h: 1.05, door: 'L', roof: 'gable', pinGap: 0.7 },
   },
 ]

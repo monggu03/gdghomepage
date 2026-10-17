@@ -1,39 +1,49 @@
 import { shade, type Point3 } from '@/lib/iso'
 import { Box, Poly } from '../primitives'
+import { FLOOR } from '../geometry'
+import { ROOF_RISE, SCREEN } from './heights'
 import type { RoofProps } from './types'
+import s from '../campus.module.css'
 
-/** 평지붕 + 지붕 위 발표 화면 + 현관 기둥: 세션·공지가 열리는 강당 */
+/** 지붕 가장자리 턱 높이 */
+const PARAPET = 0.1
+
+/**
+ * 평지붕 + 지붕 위 발표 화면 + 현관: 세션 · 공지가 열리는 강당.
+ * 장소색은 지붕 · 화면 틀 · 현관 차양에만. 화면 안은 흰 슬라이드 (글자 줄은 회색).
+ */
 export function ScreenRoof({ fp, color, top, doorCenter }: RoofProps) {
   const { x, y, w, d } = fp
-  const S = (u: number, z: number): Point3 => [x + 0.55 + u, y + 1.071, top + z]
-  const bars: Array<[string, number, number]> = [
-    ['#4285F4', 1.6, 0.76],
-    ['#EA4335', 1.15, 0.56],
-    ['#FBBC04', 0.75, 0.36],
-  ]
+  const z0 = top + PARAPET
+  const frameZ = z0 + SCREEN.legs
+  const frameH = top + ROOF_RISE.screen - frameZ
+  // 화면 앞면(+y) 위의 점: u = 왼쪽에서 거리, z = 높이
+  const S = (u: number, z: number): Point3 => [x + SCREEN.dx + u, y + SCREEN.dy + SCREEN.d + 0.004, frameZ + z]
+  const slide = (u0: number, u1: number, z: number, cls: string) => (
+    <Poly key={`${u0}-${z}`} className={cls} pts={[S(u0, z), S(u1, z), S(u1, z + 0.075), S(u0, z + 0.075)]} />
+  )
   return (
     <>
-      <Poly
-        pts={[[x + 0.16, y + 0.16, top + 0.001], [x + w - 0.16, y + 0.16, top + 0.001], [x + w - 0.16, y + d - 0.16, top + 0.001], [x + 0.16, y + d - 0.16, top + 0.001]]}
-        fill={shade(color, 0.32)}
-      />
-      {/* 발표 화면 */}
-      <Box x={x + 0.55} y={y + 0.95} w={2.3} d={0.12} z0={top} h={1.3} color="#3A4258" />
-      <Poly pts={[S(0.1, 0.12), S(2.2, 0.12), S(2.2, 1.2), S(0.1, 1.2)]} fill="#FFFFFF" />
-      <Poly pts={[S(0.3, 1.02), S(1.2, 1.02), S(1.2, 0.93), S(0.3, 0.93)]} fill="#C9CFDD" />
-      {bars.map(([c, len, z]) => (
-        <Poly key={c} pts={[S(0.3, z), S(0.3 + len, z), S(0.3 + len, z - 0.12), S(0.3, z - 0.12)]} fill={c} />
-      ))}
-      {/* 현관 기둥과 처마 (문이 오른쪽 면에 있을 때) */}
+      {/* 턱 + 한 단 낮은 지붕 바닥 */}
+      <Box x={x} y={y} w={w} d={d} z0={top} h={PARAPET} color={color} />
+      <Poly pts={[[x + 0.16, y + 0.16, z0], [x + w - 0.16, y + 0.16, z0], [x + w - 0.16, y + d - 0.16, z0], [x + 0.16, y + d - 0.16, z0]]} fill={shade(color, 0.34)} />
+      {/* 발표 화면: 다리 둘 + 장소색 틀 + 흰 화면 */}
+      <Box x={x + SCREEN.dx + 0.3} y={y + SCREEN.dy} w={0.08} d={0.08} z0={z0} h={SCREEN.legs} color="#5c616c" />
+      <Box x={x + SCREEN.dx + SCREEN.w - 0.38} y={y + SCREEN.dy} w={0.08} d={0.08} z0={z0} h={SCREEN.legs} color="#5c616c" />
+      <Box x={x + SCREEN.dx} y={y + SCREEN.dy} w={SCREEN.w} d={SCREEN.d} z0={frameZ} h={frameH} color={color} />
+      <Poly className={s.screen} pts={[S(0.09, 0.09), S(SCREEN.w - 0.09, 0.09), S(SCREEN.w - 0.09, frameH - 0.09), S(0.09, frameH - 0.09)]} />
+      {slide(0.3, 1.25, frameH - 0.3, s.slideTitle)}
+      {slide(0.3, 1.9, frameH - 0.55, s.slideLine)}
+      {slide(0.3, 1.6, frameH - 0.75, s.slideLine)}
+      {/* 현관 (문이 오른쪽 면에 있을 때): 기둥 둘 + 장소색 차양 */}
       {fp.door === 'R' && (
         <>
-          {[-0.66, -0.22, 0.22, 0.66].map((o) => (
-            <Box key={o} x={x + w + 0.42} y={doorCenter + o - 0.045} w={0.09} d={0.09} z0={0.12} h={0.8} color="#FFFFFF" />
+          {[-0.62, 0.54].map((o) => (
+            <Box key={o} x={x + w + 0.44} y={doorCenter + o} w={0.08} d={0.08} z0={FLOOR} h={0.74} edge />
           ))}
-          <Box x={x + w} y={doorCenter - 0.85} w={0.58} d={1.7} z0={0.92} h={0.1} color="#EEF1F7" />
+          <Box x={x + w} y={doorCenter - 0.78} w={0.6} d={1.56} z0={FLOOR + 0.74} h={0.07} color={color} />
         </>
       )}
     </>
   )
 }
-

@@ -7,8 +7,8 @@ export const SITE = {
   fullName: 'Google Developer Groups on Campus Dongguk University',
   generation: '4기',
   generationYears: '2026–27',
-  /** 첫 화면 한 줄 소개 */
-  pitch: '구글 개발자 기술을 함께 배우고, 팀 프로젝트로 직접 만들어 배포하는 동국대학교 개발 커뮤니티입니다.',
+  /** 첫 화면 h1 아래 한 줄 (챕터 About: 'regardless of their major or year') */
+  pitch: '동국대학교 Google Developer Groups on Campus 4기(2026–27)입니다. 전공과 학년에 상관없이 함께합니다.',
   links: {
     /** 인스타그램 프로필에서 확인 (2026-10-15) */
     instagram: 'https://www.instagram.com/gdg.donggukuniv/',
@@ -20,28 +20,31 @@ export const SITE = {
   },
 } as const
 
-/** 소개 장소의 미리보기 (서버 데이터가 아니라 고정 문구) */
+/** 소개 장소(광장 깃발)의 미리보기 세 줄. 확인된 사실만 (4기 운영 계획 · 일정) */
 export const ABOUT_FACTS = [
-  { id: 'values', label: '핵심 가치', title: '연결 · 배움 · 성장' },
-  { id: 'parts', label: '파트', title: '프론트엔드 · 백엔드 · AI/ML · 디자인' },
-  { id: 'season', label: `${SITE.generation} 활동`, title: 'G-Sprint · 동홍동락 · 동지톤' },
+  { id: 'sessions', label: '정기 세션', title: '화요일 · 네 파트별 실습' },
+  { id: 'sprint', label: 'G-Sprint', title: '5팀 27명 · 12.29 데모데이' },
+  { id: 'joint', label: '연합 행사', title: '동홍동락 · 동지톤' },
 ] as const
 
-/** 지난 모집에서 확인된 사실 (인스타그램 4기 모집 게시물 기준). 5기 일정이 아니다 */
+/** 지난 모집에서 확인된 사실 (인스타그램 4기 모집 게시물 · Linktree 4기 지원서 기준). 5기 일정이 아니다 */
 export const RECRUIT_FACTS = [
-  { id: 'when', label: '지난 모집', body: '4기는 8월에 코어 멤버, 9월 초에 일반 멤버를 모집했습니다.' },
-  { id: 'session', label: '정기 세션', body: '화요일에 세션을 엽니다. 시험 기간에는 쉽니다.' },
+  { id: 'when', label: '지난 모집', body: '4기는 8월에 코어 멤버, 9월 초에 마케팅 코어 · 일반 멤버를 모집했습니다.' },
+  { id: 'session', label: '정기 세션', body: '4기는 매주 화요일 저녁 6시에 모입니다. 시험 기간에는 쉽니다.' },
   { id: 'next', label: '5기 모집', body: '일정이 정해지면 이 페이지와 인스타그램에 가장 먼저 공지합니다.' },
 ] as const
 
-/** 4기 G-Sprint 일정 (확정) */
+/**
+ * 4기 G-Sprint 일정 (확정).
+ * 발제 · 팀빌딩은 팀 계획, 10.13 은 공개 행사 'G-Sprint Kickoff: Team Meetings' (events.json 4th-sprint-kickoff) 와 같은 날이다.
+ */
 export const SPRINT = {
   title: 'G-Sprint',
   demoDay: '2026-12-29',
   steps: [
     { label: '발제', when: '09.22', date: '2026-09-22' },
     { label: '팀빌딩', when: '10.06', date: '2026-10-06' },
-    { label: '주제 발표', when: '10.13', date: '2026-10-13' },
+    { label: '킥오프', when: '10.13', date: '2026-10-13' },
     { label: '중간 발표', when: '10.27', date: '2026-10-27' },
     { label: '개발', when: '11월', date: '2026-11-03' },
     { label: '데모데이', when: '12.29', date: '2026-12-29', note: '성과공유회' },

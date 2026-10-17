@@ -3,20 +3,32 @@ import { PAGE_PLAN_IDS } from '@/config/pages'
 import { HomePage } from '@/features/home/HomePage'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { ErrorPage } from '@/features/pages/ErrorPage'
-import { NotFoundPage, PlannedPage } from '@/features/pages/PlannedPage'
+import { CampusPreview, CommunityPage, NotFoundPage, NowPreview, PlannedPage, ProjectsPage, RecruitsPage } from './lazyPages'
 
 /** 다 만든 페이지. 준비 중 페이지를 실제로 만들면 여기로 옮긴다 */
-const BUILT_ROUTES: RouteObject[] = [{ index: true, element: <HomePage /> }]
+const BUILT_ROUTES: RouteObject[] = [
+  { index: true, element: <HomePage /> },
+  { path: 'projects', element: <ProjectsPage /> },
+  { path: 'community', element: <CommunityPage /> },
+  { path: 'recruits', element: <RecruitsPage /> },
+]
+const BUILT = new Set(BUILT_ROUTES.map((r) => r.path))
 
-/** config/pages.ts 에 계획만 있는 페이지는 자동으로 '준비 중' 페이지가 된다 */
-const PLANNED_ROUTES: RouteObject[] = PAGE_PLAN_IDS.map((id) => ({ path: id, element: <PlannedPage id={id} /> }))
+/** 작업 중 컴포넌트를 혼자 띄워 보는 주소 (배포본에도 있지만 메뉴에는 없다) */
+const PREVIEW_ROUTES: RouteObject[] = [
+  { path: '__preview/now', element: <NowPreview /> },
+  { path: '__preview/campus', element: <CampusPreview /> },
+]
+
+/** config/pages.ts 에 계획만 있고 아직 만들지 않은 페이지는 자동으로 '준비 중' 페이지가 된다 */
+const PLANNED_ROUTES: RouteObject[] = PAGE_PLAN_IDS.filter((id) => !BUILT.has(id)).map((id) => ({ path: id, element: <PlannedPage id={id} /> }))
 
 const routes: RouteObject[] = [
   {
     element: <AppLayout />,
     // 화면을 그리다 오류가 나면 흰 화면 대신 안내를 보여준다
     errorElement: <ErrorPage />,
-    children: [...BUILT_ROUTES, ...PLANNED_ROUTES, { path: '*', element: <NotFoundPage /> }],
+    children: [...BUILT_ROUTES, ...PLANNED_ROUTES, ...PREVIEW_ROUTES, { path: '*', element: <NotFoundPage /> }],
   },
 ]
 

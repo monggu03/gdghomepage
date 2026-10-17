@@ -11,11 +11,27 @@ body {
   margin: 0;
 }
 
+/*
+ * 붙어 있는 머리말(64px) 아래로 이동 · 초점 이동.
+ * html 의 scroll-padding 을 쓰면 머리말 안 링크에 초점이 갈 때마다 화면이 위로 튀어서,
+ * 본문 · 꼬리말 요소에만 여백을 준다.
+ */
+:where(main, footer),
+:where(main, footer) * {
+  scroll-margin-top: 80px;
+}
+/* 창(검색 · 폰 메뉴)이 열려 있는 동안 뒤 페이지가 스크롤되지 않게 */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
 body {
-  background: var(--bg);
-  color: var(--ink);
-  font: 15px/1.5 var(--font-kr);
+  background: var(--paper);
+  color: var(--ink-900);
+  font: var(--t-body);
+  letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   /* 한국어는 낱말 중간에서 줄을 바꾸지 않는다. 너무 긴 영문 주소만 끊는다 */
   word-break: keep-all;
   overflow-wrap: break-word;
@@ -29,9 +45,21 @@ p,
 ul,
 ol,
 dl,
-figure {
+dd,
+figure,
+blockquote {
   margin: 0;
   padding: 0;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 ul,
@@ -41,6 +69,8 @@ ol {
 
 a {
   color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 button {
@@ -50,6 +80,7 @@ button {
 
 img {
   max-width: 100%;
+  display: block;
 }
 
 :focus-visible {
@@ -61,11 +92,21 @@ img {
   display: none !important;
 }
 
-/* 화면 밖에 있는 반복 애니메이션은 멈춘다 (HeroSection 이 data-paused 를 붙인다) */
+/* 화면 밖에 있는 반복 애니메이션은 멈춘다 */
 [data-paused] *,
 [data-paused] *::before,
 [data-paused] *::after {
   animation-play-state: paused !important;
+}
+
+/* ── 공통 조각 ── */
+
+/* 가운데 정렬 틀: 최대 1200, 좌우 여백 */
+.container {
+  width: 100%;
+  max-width: calc(var(--max) + var(--side) + var(--side-r));
+  margin-inline: auto;
+  padding-inline: var(--side) var(--side-r);
 }
 
 /* 키보드 사용자를 위한 '본문 바로가기' */
@@ -73,13 +114,13 @@ img {
   position: fixed;
   z-index: 100;
   top: calc(8px + env(safe-area-inset-top, 0px));
-  left: var(--gutter-l);
+  left: var(--side);
   padding: 10px 16px;
   border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--ink);
+  border-radius: var(--r-control);
+  background: var(--ink-900);
   color: #fff;
-  font-weight: 700;
+  font: var(--t-ui);
   cursor: pointer;
   transform: translateY(-200%);
 }
@@ -87,91 +128,105 @@ img {
   transform: none;
 }
 
-/* 여러 컴포넌트가 같이 쓰는 작은 조각 */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--hair);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow);
-}
-
-/* 4기 표시. 주황은 이 배지에만 쓴다 */
-.gen-badge {
+/* 주 버튼: 한 화면에 하나 */
+.btn-primary {
   display: inline-flex;
   align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: var(--radius-pill);
-  background: var(--gen4-orange);
-  color: var(--on-orange);
-  font: 700 12px/1 var(--font-display);
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: var(--radius-pill);
-  background: var(--ink);
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--ink-900);
   color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
+  font: 600 16px/1 var(--font-kr);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-hover) var(--ease);
+}
+.btn-primary:hover {
+  background: #000;
 }
 
-.live-badge::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--g-green);
-  animation: blink 1.6s infinite;
-}
-
-/* '예시': 실제 글이 아님. 점선 테두리 */
-.sample-badge {
+/* 보조 행동: 밑줄 링크 */
+.link {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-sub);
-  border: 1px dashed var(--line);
-  padding: 0 7px;
-  line-height: 18px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--t-ui);
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.link:hover {
+  text-decoration-thickness: 2px;
 }
 
-/* '예정' · '준비 중': 실제 일정이지만 아직 안 옴. 연한 파랑 바탕 */
+/* 장소 표식: 8px 네모 (색은 style 로 --c) */
+.mark {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--c, var(--ink-900));
+  flex: none;
+}
+
+/* 기수 태그 (주황): '지금 기수'에만 */
+.gen-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--r-tag);
+  background: var(--gen);
+  color: var(--on-gen);
+  font: 700 13px/1 var(--font-kr);
+}
+
+/* 상태 글자: '예시' 는 점선, '예정' 은 옅은 면 */
+.sample-badge,
 .soon-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-  background: #e8f0fe;
-  padding: 0 8px;
-  line-height: 20px;
-  border-radius: var(--radius-pill);
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--r-tag);
+  font: var(--t-meta);
+  color: var(--ink-700);
   white-space: nowrap;
 }
-
-.dots {
-  display: inline-flex;
-  gap: 3px;
+.sample-badge {
+  border: 1px dashed var(--line-strong);
+}
+.soon-badge {
+  background: var(--subtle);
 }
 
+/* 숫자 덩어리 */
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 구글 4색 원 (첫 화면 · 모집에만, 최대 두 번) */
+.dots {
+  display: inline-flex;
+  gap: 4px;
+}
 .dots i {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   display: block;
 }
-
 .dots i:nth-child(1) { background: var(--g-blue); }
 .dots i:nth-child(2) { background: var(--g-red); }
 .dots i:nth-child(3) { background: var(--g-yellow); }
@@ -186,14 +241,8 @@ img {
   white-space: nowrap;
 }
 
-@keyframes blink {
-  50% {
-    opacity: 0.25;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .live-badge::before {
-    animation: none;
+@media (max-width: 767px) {
+  .btn-primary {
+    min-height: 52px;
   }
 }

@@ -6,12 +6,13 @@
 |---|---|---|
 | 메뉴 구성, 장소 이름·색 | `config/places.ts` | 데이터 주도 설정 |
 | 문구 · 링크 · 연락처 | `config/site.ts` | 설정 한 곳 (null 이면 숨김) |
-| 데이터 출처 (예시 → Spring Boot) | `data/` | Repository + 의존성 주입 |
+| 실제 기록 (행사 · 프로젝트 · 기수 · FAQ) | `content/*.json` + `content/validate.ts` | 내용과 코드 분리, 불러올 때 검사 |
+| 데이터 출처 (JSON 스냅샷 → Spring Boot) | `data/` | Repository + 의존성 주입 |
 | 서버 응답 모양 | `data/http/adapters.ts` | Adapter |
 | 불러오기 · 캐시 | `data/queries.ts` | TanStack Query |
 | 검색 방법 (키워드 → Gemini) | `services/search/`, `SearchService` | Strategy |
 | 건물 지붕 모양 | `features/campus/roofs/` | Strategy + Registry |
-| 카드 배치 | `features/home/HeroSection.tsx` | 배치와 장면 분리 |
+| 지도 놓을 자리 | `features/home/HeroSection.tsx` 의 `getLayout` | 배치와 장면 분리 |
 | 아직 안 만든 페이지 | `config/pages.ts` → 라우터가 자동 연결 | 설정에서 라우트 만들기 |
 
 ## 1. 지도 = 메뉴 (데이터 주도 설정)
@@ -26,7 +27,8 @@
 flowchart LR
   C[컴포넌트] -->|useSchedule 등| Q[queries.ts · TanStack Query]
   Q -->|useRepositories| R[Repositories 인터페이스]
-  R --> M[mock 예시 데이터]
+  R --> N[snapshot · src/content JSON]
+  R --> M[mock · 테스트용]
   R --> H[http 구현]
   H --> A[adapters.ts]
   H --> S[Spring Boot API]
@@ -34,7 +36,8 @@ flowchart LR
 ```
 
 - 컴포넌트는 `queries.ts` 의 훅만 씁니다. 데이터가 예시인지 서버인지 모릅니다.
-- 어떤 구현을 쓸지는 `RepositoryProvider` 한 곳에서 정합니다 (`.env` 의 `VITE_DATA_SOURCE`).
+- 어떤 구현을 쓸지는 `RepositoryProvider` 한 곳에서 정합니다. 기본은 저장소 JSON(snapshot), `.env` 에 `VITE_DATA_SOURCE=http` 면 Spring Boot.
+- 서버가 없어도 실제 기록을 보여줄 수 있게 snapshot 을 기본으로 둡니다. 서버가 생기면 같은 인터페이스로 바꿔 끼웁니다.
 - 테스트할 때는 `RepositoryProvider value={가짜}` 로 원하는 데이터를 넣을 수 있습니다.
 
 ## 3. 서버 응답은 믿지 않는다 (Adapter)
@@ -74,37 +77,48 @@ flowchart LR
 날짜(D-n, 달력), 일정 정렬 · 기간 표시, 아이소메트릭 투영, 장면 맞추기, 검색 점수, 사람 경로, G-Sprint 진행률은 DOM 없이 계산합니다.
 그래서 `npm test` 로 바로 확인할 수 있고, 화면 코드는 짧아집니다.
 
-## 8. 1초에 60번 움직이는 것은 React 밖에서
+## 8. 1초에 30번 움직이는 것은 React 밖에서
 
-걷는 사람은 매 프레임 위치가 바뀝니다. 이걸 React 상태로 두면 장면 전체가 계속 다시 그려집니다.
+걷는 사람은 계속 위치가 바뀝니다. 이걸 React 상태로 두면 장면 전체가 계속 다시 그려집니다.
 
 - `WalkerLayer` (클래스) 가 사람 노드를 직접 만들고 움직입니다. React 리렌더는 0번입니다.
+- 사람은 작고 느려서 1초에 30번이면 충분합니다 (`useWalkers`). 폰에서는 2명만 걷습니다.
 - `useAnimationLoop` 가 루프를 하나만 돌리고, 화면 밖이나 다른 탭이면 멈춥니다. '동작 줄이기' 설정도 지킵니다.
-- 폰에서는 사람을 4명으로 줄입니다.
-- 깃발 · 진행 중 표시 같은 CSS 반복 애니메이션도 첫 화면이 화면 밖이면 멈춥니다 (`data-paused`).
-- 카드의 반투명 + blur(backdrop-filter)는 지도를 그릴 때마다 비용이 커서 뺐습니다.
+- 깃발이 올라가는 움직임은 세션에 한 번만, 지도가 화면에 들어왔을 때 합니다.
 
-## 9. 장면은 카드 배치를 모른다: 카드를 피해 가장 크게
+## 9. 장면은 화면 배치를 모른다: 가리면 안 되는 것만 지킨다
 
-첫 화면(HeroSection)은 카드 자리만 알려주고(`getLayout`), 장면 놓기는 `lib/fit.ts` 의 `fitAvoiding` 이 맡습니다.
+첫 화면(HeroSection)은 지도 띠의 크기와 피할 자리만 알려주고(`getLayout`), 장면 놓기는 `lib/fit.ts` 의 `fitAvoiding` 이 맡습니다.
 
-- 땅(바닥)은 카드 밑으로 들어가도 됩니다. **건물 · 깃발 · 이름표만** 카드에 가리지 않으면 됩니다 (`campus/geometry.ts` 의 `sceneTargets`).
-- 큰 배율부터 0.02씩 줄이며, 그 배율에서 가능한 자리 중 '왼쪽 카드와 오른쪽 카드 사이 가운데'에 가장 가까운 자리를 고릅니다.
-- 그래서 넓은 화면일수록 지도가 커집니다 (1903×960 기준 예전보다 약 1.5배).
-- 오른쪽 카드 줄은 세로 전체를 한 덩어리로 봅니다. 장소마다 패널 높이가 달라도 지도가 흔들리지 않게 하려는 것입니다.
-- 첫 화면 바닥은 흰색으로 흐려지므로 맨 아래 64px 에는 건물을 두지 않습니다.
-- 이름표는 그리기 전이라 글자 폭을 어림값으로 씁니다 (`estimateLabelWidth`, 한글 13 · 영문 7.5).
-- 1100px 이하에서는 오른쪽 이름표를 왼쪽으로 돌리고 '진행 중' 표시를 뺍니다.
-- 카드 순서나 크기를 바꿔도 장면 코드는 그대로입니다. 카드가 늘면 `obstacles` 에 하나 더 넣으면 됩니다.
+- 땅 · 나무 · 길은 화면 끝에서 잘려도 됩니다. **건물 · 깃발 · 안내판**만 잘리면 안 됩니다 (`campus/geometry.ts` 의 `sceneTargets`).
+- 큰 배율부터 0.02씩 줄이며, 그 배율에서 가능한 자리 중 '선호 영역' 가운데에 가장 가까운 자리를 고릅니다.
+- 안내판은 그리기 전이라 글자 폭을 어림값으로 씁니다 (`estimateLabelWidth`). Pretendard 를 못 받아도 넘치지 않게 넉넉히 잡습니다.
+- 안내판 글자는 지도 배율과 상관없이 화면에서 14–16px (폰 13px 이상)로 보이게 따로 키웁니다 (`labelScaleFor`).
+- 좁은 화면에서는 오른쪽 끝 장소의 안내판을 왼쪽으로 펼칩니다.
+- 땅은 흰색이라 지도 띠가 회색 받침처럼 보이지 않습니다. 위아래 40px 만 흰색으로 흐려 잘린 길을 정리합니다.
 
-## 10. 접근성에서 지킨 것
+## 10. 내용은 JSON, 화면은 코드
 
-- 검색: 콤보박스(↓↑ 이동, Enter 열기, Esc 닫기 → 지우기), 결과 건수를 화면 읽기 프로그램에 알림
-- 캘린더: 표(table)로 읽힘. 날짜 칸마다 'O월 O일'
-- 지도 건물 · 장소 카드: 고른 장소는 `aria-current`, 미리보기 패널을 `aria-controls` 로 가리킴
-- 흐르는 후기에는 멈춤 버튼. '동작 줄이기' 설정이면 흐르지 않음
-- 누르는 것은 44px 이상, 본문 바로가기, 키보드 초점 표시
-- axe 검사(첫 화면 1440 · 390, 검색 중, Recruits): 위반 0건
+- 행사 · 프로젝트 · 기수 · FAQ · 모집 기록은 `src/content/*.json` 에 있습니다. 출처 주소가 없는 줄은 넣지 않습니다.
+- `content/validate.ts` 가 불러올 때 모양을 검사하고, `content.test.ts` 가 날짜 형식 · 조사 띄어쓰기 · 이름 통일 · 숫자와 실제 줄 수가 맞는지 확인합니다.
+- 공개 프로젝트 수는 `PUBLIC_PROJECTS`(GitHub GDSC-DGU 조직 저장소) 하나로 셉니다. 화면마다 따로 세지 않습니다.
+- 행사 목록은 `npm run sync:events` 로 gdg.community.dev 에서 받아옵니다. 자세한 규칙은 [CONTENT.md](CONTENT.md).
+
+## 11. 처음 받는 파일을 줄인다
+
+- 홈만 처음 받는 파일에 넣고, 프로젝트 · 커뮤니티 · 지원 안내 · 준비 중 페이지는 들어갈 때 받습니다 (`app/lazyPages.tsx`).
+- 받는 동안 머리말 · 꼬리말은 그대로 두고 본문 자리 높이만 잡아 둡니다.
+- 파일 하나로 묶어야 하는 미리보기(아티팩트)는 `VITE_SINGLE_FILE=1` 로 다시 한 파일로 합칩니다.
+
+## 12. 접근성에서 지킨 것
+
+- 검색: 콤보박스(↓↑ 이동, Enter 열기, Esc 닫기 → 지우기), 결과 건수를 화면 읽기 프로그램에 알림. 고르면 초점이 미리보기 제목으로
+- 지도 건물 · 깃발: 키보드로 고를 수 있고, 미리보기를 닫으면 초점이 그 건물로 돌아옴 (`data-place`)
+- 고른 장소는 `aria-current`, 미리보기를 `aria-controls` 로 가리킴. 범례가 같은 메뉴를 글자로 한 번 더 제공
+- 달력: 표(table)로 읽힘. 날짜 칸마다 'O월 O일'
+- 누르는 것은 44px 이상, 본문 바로가기, 키보드 초점 표시. 13px 보다 작은 글자 없음
+- 머리말이 위에 붙어 있어도 초점이 가려지지 않게 본문 · 꼬리말에만 `scroll-margin-top` (머리말 링크에 초점이 가도 화면이 튀지 않음)
+- axe 검사(홈 1440 · 390, 검색 중, 폰 메뉴, 프로젝트 · 커뮤니티 · 지원 안내 · 준비 중): 위반 0건
 
 ## 배포할 때
 
@@ -118,6 +132,6 @@ flowchart LR
   `overflow: hidden` 인 첫 화면까지 가로로 스크롤됐습니다. 카드 줄만 `scrollTo` 로 직접 움직이고, 첫 화면은 `overflow: clip` 으로 막았습니다.
 - **G-Sprint 단계 당일에 이미 '완료'로 보임**: 10.27 당일에 중간 발표가 체크 표시로 나왔습니다. 당일은 '지금 단계'로 보이게 고쳤습니다 (`lib/sprint.ts`).
 - **여러 날 행사가 달을 넘으면 '10.31–02' 로 보임**: `lib/schedule.ts` 의 `rangeLabel` 이 '10.31–11.02' 로 씁니다.
-- **폰에서 배경 도형이 카드 위에 그려짐**: 흐름 안의 카드에 `position: relative; z-index: 1` 을 주어 도형 위로 올렸습니다.
-- **화면 오른쪽 끝에서 배경 도형이 잘려 보임**: 고리 모양이 또렷한 도형이 화면 끝에서 반만 잘려 깨진 것처럼 보였습니다. 크게 흐린 빛(blur 56px)으로 바꿨습니다.
 - **미리보기 패널 글이 '…'으로 잘림**: 한 줄 말줄임 대신 줄을 바꿉니다.
+- **머리말 링크에 초점이 가면 화면이 위로 튐**: `html { scroll-padding-top }` 때문에 붙어 있는 머리말 안 요소까지 '머리말 아래로' 맞추려 했습니다. 본문 · 꼬리말에만 `scroll-margin-top` 을 줍니다.
+- **미리보기를 닫으면 초점이 사라짐**: SVG 건물은 `HTMLElement` 가 아니라서 초점 되돌리기가 건너뛰어졌습니다. `Element` 로 확인하고 `data-place` 로 건물을 찾습니다.

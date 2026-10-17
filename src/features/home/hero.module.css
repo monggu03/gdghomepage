@@ -1,0 +1,241 @@
+/* ── 첫 화면 위: 한 줄 소개 | 다음 일정, 그 아래 소개 글 + 행동 (12칸 격자) ──
+ * 1280×720 에서도 지도가 화면 절반 가까이 보이게 위아래 여백을 줄였다 (지도 시작 ≈ 420px).
+ */
+.top {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  padding-top: 36px;
+  padding-bottom: 20px;
+}
+
+.title {
+  grid-column: 1 / span 9;
+  grid-row: 1;
+  font: var(--t-display);
+  letter-spacing: var(--ls-display);
+  color: var(--ink-900);
+  text-wrap: wrap;
+}
+/* 묶음 안에서는 줄을 바꾸지 않는다 (가장 긴 묶음이 들어가는 폭부터) */
+@media (min-width: 360px) {
+  .phrase {
+    display: inline-block;
+  }
+}
+
+/* 소개 글 + 행동: h1 아래 줄 */
+.intro {
+  grid-column: 1 / span 8;
+  grid-row: 2;
+  align-self: start;
+}
+.lead {
+  max-width: 34em;
+  margin-top: 16px;
+  font: var(--t-lead);
+  letter-spacing: -0.01em;
+  color: var(--ink-700);
+}
+
+.sentence {
+  display: block;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  margin-top: 24px;
+}
+.actions :global(.link) {
+  min-height: 44px;
+}
+
+/* 다음 일정: h1 과 같은 줄 오른쪽. 상자 없이 위 괘선 하나로 묶은 데이터.
+ * 일정을 받기 전에도 같은 높이를 잡아 둔다 (받은 뒤에 화면이 밀리지 않게) */
+.next {
+  grid-column: 10 / span 3;
+  grid-row: 1;
+  align-self: end;
+  min-height: 140px;
+}
+.nextEvent {
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-900);
+}
+.nextLabel {
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.dday {
+  margin-top: 8px;
+  font: var(--t-num);
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+.nextTitle {
+  margin-top: 10px;
+  font: 600 17px/26px var(--font-kr);
+  color: var(--ink-900);
+}
+
+/* ── 지도: 화면 끝에서 끝까지, 위에 아무것도 얹지 않는다 ── */
+.map {
+  position: relative;
+  isolation: isolate;
+  height: clamp(440px, 58vh, 640px);
+  overflow: hidden;
+  overflow: clip;
+}
+/* 지도 땅이 위아래 흰 바탕과 칼같이 끊기지 않게 살짝 흐린다 (그림 위에 겹칠 뿐, 누르는 데는 영향 없음) */
+.map::before,
+.map::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: 40px;
+  pointer-events: none;
+}
+.map::before {
+  top: 0;
+  background: linear-gradient(var(--paper), rgba(255, 255, 255, 0));
+}
+.map::after {
+  bottom: 0;
+  background: linear-gradient(rgba(255, 255, 255, 0), var(--paper));
+}
+
+/* ── 지도 아래 범례 = 같은 메뉴를 글자로 ── */
+.legend {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: var(--gutter);
+}
+.legendItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  width: 100%;
+  min-height: 72px;
+  padding: 14px 0 16px;
+  border: 0;
+  border-top: 2px solid transparent;
+  background: none;
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-hover) var(--ease);
+}
+.legendItem[aria-expanded='true'] {
+  border-top-color: var(--ink-900);
+}
+.legendName {
+  font: var(--t-ui);
+}
+.legendSub {
+  grid-column: 2;
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.legendItem:hover .legendName,
+.legendItem[aria-expanded='true'] .legendName {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* ── 태블릿: 다음 일정은 소개 글 아래로, D-n 옆에 날짜 · 제목 ── */
+@media (max-width: 1023px) {
+  .title {
+    grid-column: 1 / -1;
+  }
+  .intro {
+    grid-column: 1 / -1;
+  }
+  .next {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    min-height: 0;
+    margin-top: 32px;
+  }
+  /* 따로 한 줄을 차지하므로 받기 전에만 자리를 잡는다 (받은 뒤 일정이 없으면 접힌다) */
+  .next[data-pending] {
+    min-height: 101px;
+  }
+  .nextEvent {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+    column-gap: 20px;
+  }
+  .nextLabel {
+    grid-column: 1 / -1;
+  }
+  .dday {
+    margin-top: 4px;
+  }
+  .nextTitle {
+    margin-top: 0;
+    padding-bottom: 4px;
+  }
+  .legend {
+    column-gap: 16px;
+  }
+}
+
+/* ── 폰 ── */
+@media (max-width: 767px) {
+  .top {
+    display: flex;
+    flex-direction: column;
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+  .lead {
+    margin-top: 16px;
+  }
+  .actions {
+    margin-top: 24px;
+    gap: 8px 24px;
+  }
+  .next {
+    align-self: stretch;
+    margin-top: 28px;
+  }
+  .next[data-pending] {
+    min-height: 81px;
+  }
+  .nextTitle {
+    padding-bottom: 0;
+  }
+  .map {
+    height: 360px;
+  }
+  .legend {
+    grid-template-columns: minmax(0, 1fr);
+    border-top: 1px solid var(--line);
+  }
+  .legendItem {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    min-height: 52px;
+    padding: 0;
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .legendSub {
+    grid-column: 3;
+    justify-self: end;
+    text-align: right;
+  }
+  .legendItem[aria-expanded='true'] {
+    box-shadow: inset 2px 0 0 var(--ink-900);
+    padding-left: 12px;
+  }
+}

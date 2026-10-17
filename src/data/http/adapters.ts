@@ -1,4 +1,4 @@
-import type { ArchiveDoc, EventKind, PlaceId, PreviewItem, Review, ScheduleEvent, SearchHit, Stat } from '@/domain/types'
+import type { ArchiveDoc, EventKind, PlaceId, PreviewItem, Project, Review, ScheduleEvent, SearchHit, Stat } from '@/domain/types'
 
 /**
  * 서버 응답 → 화면 데이터 모양(domain/types) 으로 바꾸는 곳 (Adapter).
@@ -14,7 +14,7 @@ import type { ArchiveDoc, EventKind, PlaceId, PreviewItem, Review, ScheduleEvent
 type Raw = Record<string, unknown>
 
 const PLACE_IDS: readonly PlaceId[] = ['about', 'projects', 'teams', 'community', 'recruits']
-const KINDS: readonly EventKind[] = ['sprint', 'event', 'session', 'notice', 'rest']
+const KINDS: readonly EventKind[] = ['session', 'event', 'sprint', 'project', 'recruit', 'notice', 'rest']
 
 const isObject = (v: unknown): v is Raw => typeof v === 'object' && v !== null && !Array.isArray(v)
 const text = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : typeof v === 'number' ? String(v) : undefined)
@@ -54,7 +54,33 @@ export function toScheduleEvent(raw: unknown): ScheduleEvent | null {
   const place = toPlace(raw.place ?? raw.placeId) ?? 'community'
   if (!date || !title || !kind) return null
   const endDate = toYmd(raw.endDate ?? raw.endAt)
-  return { id: text(raw.id) ?? `${date}-${title}`, date, ...(endDate && endDate !== date ? { endDate } : {}), title, kind, place }
+  const extra: Partial<ScheduleEvent> = {}
+  const generation = Number(raw.generation)
+  if (Number.isInteger(generation) && generation > 0) extra.generation = generation
+  for (const key of ['series', 'venue', 'originalTitle', 'url', 'source'] as const) {
+    const v = text(raw[key])
+    if (v) extra[key] = v
+  }
+  return { id: text(raw.id) ?? `${date}-${title}`, date, ...(endDate && endDate !== date ? { endDate } : {}), title, kind, place, ...extra }
+}
+
+export function toProject(raw: unknown): Project | null {
+  if (!isObject(raw)) return null
+  const name = text(raw.name ?? raw.title)
+  const program = text(raw.program)
+  const year = Number(raw.year)
+  if (!name || !program || !Number.isInteger(year)) return null
+  const status = text(raw.status)?.toLowerCase() === 'in-progress' ? 'in-progress' : 'done'
+  const generation = Number(raw.generation)
+  const stack = Array.isArray(raw.stack) ? raw.stack.map(text).filter((s): s is string => Boolean(s)) : undefined
+  const p: Project = { id: text(raw.id) ?? name, name, program, year, status }
+  if (Number.isInteger(generation) && generation > 0) p.generation = generation
+  if (stack?.length) p.stack = stack
+  for (const key of ['summary', 'repo', 'url', 'source'] as const) {
+    const v = text(raw[key])
+    if (v) p[key] = v
+  }
+  return p
 }
 
 export function toStat(raw: unknown): Stat | null {
