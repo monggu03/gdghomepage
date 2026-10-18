@@ -11,6 +11,16 @@ body {
   margin: 0;
 }
 
+html {
+  /*
+   * 창(검색 · 폰 메뉴)을 열면 뒤 페이지 스크롤을 막는다(아래 overflow: hidden).
+   * 스크롤 막대가 자리를 차지하는 화면(윈도 데스크톱)에서 그때 페이지가 옆으로 15px 튀지 않게 자리를 늘 잡아 둔다.
+   */
+  scrollbar-gutter: stable;
+  /* 폰에서 누를 때 회색 상자 대신 아주 옅은 먹색 (버튼은 아래 :active 로 따로 반응한다) */
+  -webkit-tap-highlight-color: rgba(25, 27, 31, 0.06);
+}
+
 /*
  * 붙어 있는 머리말(64px) 아래로 이동 · 초점 이동.
  * html 의 scroll-padding 을 쓰면 머리말 안 링크에 초점이 갈 때마다 화면이 위로 튀어서,
@@ -83,8 +93,9 @@ img {
   display: block;
 }
 
+/* 포커스 링: 밝은 면은 파랑, 먹색 면(.on-dark)은 #8AB4F8 (--focus 가 면을 따라 바뀐다) */
 :focus-visible {
-  outline: 2px solid var(--g-blue);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -128,28 +139,171 @@ img {
   transform: none;
 }
 
-/* 주 버튼: 한 화면에 하나 */
-.btn-primary {
+/*
+ * ── 면 (DESIGN 4장: 흰 · 옅은 회색 · 먹색 세 가지, 섹션 단위로만) ──
+ * .on-dark : 먹색 면. 글자 · 선 단계를 흰 쪽으로 바꿔 끼워, 안에 들어온 공통 조각(링크 · 이름표 · 목록)이 그대로 4.5:1 을 넘게 한다.
+ * .on-light: 먹색 면 안에 다시 놓인 흰 판(일정 표 등). 단계를 밝은 면 값으로 되돌린다 (값은 tokens.css :root, .on-light).
+ * .story   : 이야기 섹션 (common/StorySection). paper · field · dark 중 하나를 함께 단다.
+ *            field · dark 는 페이지 틀(.container) 안에 놓여도 바탕만 화면 끝까지 칠한다 (그림자 + clip-path: 가로 넘침 없음).
+ */
+.on-dark {
+  --ink-900: var(--band-ink);
+  --ink-700: var(--band-ink-2);
+  --ink-500: var(--band-ink-3);
+  --line: var(--band-line);
+  --line-strong: #4b5058;
+  --subtle: var(--band-raise);
+  --focus: #8ab4f8;
+  /* 버튼: 먹색 위 주 버튼은 흰 바탕, 두 번째 버튼은 한 단계 밝은 먹색 */
+  --btn-bg: #ffffff;
+  --btn-bg-hover: #e9ebee;
+  --btn-ink: var(--band-bg);
+  --btn2-bg: var(--band-raise);
+  --btn2-bg-hover: #363a41;
+  --btn2-ink: var(--band-ink);
+  --btn2-line: transparent;
+  --btn2-line-hover: transparent;
+  color: var(--band-ink);
+}
+.on-light {
+  --btn-bg: var(--ink-900);
+  --btn-bg-hover: #000;
+  --btn-ink: #fff;
+  --btn2-bg: var(--field);
+  --btn2-bg-hover: #e6e9ed;
+  --btn2-ink: var(--ink-900);
+  --btn2-line: transparent;
+  --btn2-line-hover: transparent;
+  color: var(--ink-900);
+}
+/* 위 · 아래 여백만 바꾸려면 그 섹션 class 에서 --story-top · --story-bottom 을 정한다 (class 순서와 상관없이 먹는다) */
+.story {
+  position: relative;
+  padding-top: var(--story-top, var(--story-pad));
+  padding-bottom: var(--story-bottom, var(--story-pad));
+}
+.story.field {
+  /* 옅은 회색 면 위 두 번째 버튼은 흰 바탕 + 1px 선 */
+  --btn2-bg: #ffffff;
+  --btn2-bg-hover: #ffffff;
+  --btn2-line: var(--line);
+  --btn2-line-hover: var(--ink-500);
+  background: var(--field);
+}
+.story.dark {
+  background: var(--band-bg);
+}
+.story.field,
+.story.dark {
+  margin-top: var(--gap-section-near);
+  box-shadow: 0 0 0 100vmax var(--story-bg);
+  clip-path: inset(0 -100vmax);
+}
+.story.field {
+  --story-bg: var(--field);
+}
+.story.dark {
+  --story-bg: var(--band-bg);
+}
+/* 면이 바뀌면 그 경계가 섹션을 나눈다: 이야기 섹션끼리 · 페이지 머리 바로 다음은 바깥 여백 없이 */
+.story + .story.field,
+.story + .story.dark {
+  margin-top: 0;
+}
+:where(main header) + .story.field,
+:where(main header) + .story.dark {
+  margin-top: 24px;
+}
+/* 흰 → 흰: 여백은 하나만 (앞 섹션의 아래 여백) */
+.story.paper + .story.paper {
+  padding-top: 0;
+}
+
+/*
+ * ── 버튼 (DESIGN 7장) ──
+ * 주 버튼(.btn-primary): 한 화면에 하나. 52 · radius 12. 먹색 면 위에서는 흰 바탕.
+ * 두 번째 버튼(.btn-secondary): 옅은 면. 옅은 회색 면 위에서는 흰 바탕 + 1px 선, 먹색 면 위에서는 한 단계 밝은 먹색.
+ * 작은 크기(.btn-sm): 높이 40 · radius 10 (머리말). 누르는 자리는 위아래로 넓혀 44.
+ * 누르면 살짝 눌린다 (--press, 튕김 없이 되돌아온다). hover 는 마우스가 있는 화면에서만.
+ * 바깥으로 나가면 글자 뒤 ↗ (span aria-hidden), 사이트 안 이동은 .link-go 의 → .
+ */
+.btn-primary,
+.btn-secondary {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 48px;
-  padding: 0 22px;
+  min-height: 52px;
+  padding: 0 24px;
   border: 0;
   border-radius: var(--r-control);
-  background: var(--ink-900);
-  color: #fff;
   font: 600 16px/1 var(--font-kr);
+  text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background var(--dur-hover) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-hover) var(--ease),
+    box-shadow var(--dur-hover) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
-.btn-primary:hover {
-  background: #000;
+.btn-primary {
+  background: var(--btn-bg, var(--ink-900));
+  color: var(--btn-ink, #fff);
+}
+.btn-secondary {
+  padding: 0 22px;
+  background: var(--btn2-bg, var(--field));
+  color: var(--btn2-ink, var(--ink-900));
+  box-shadow: inset 0 0 0 1px var(--btn2-line, transparent);
+}
+.btn-sm {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font: var(--t-ui);
+}
+/* 작은 버튼도 누르는 자리는 44 (보이는 틀은 40) */
+.btn-sm::before {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+}
+.btn-primary:active,
+.btn-secondary:active {
+  transform: scale(var(--press));
+}
+.btn-primary:active {
+  background: var(--btn-bg-hover, #000);
 }
 
-/* 보조 행동: 밑줄 링크 */
+/* 사이트 안 이동 링크: 밑줄 없이 → . 마우스를 올리면 밑줄 + → 가 3px 나아간다 */
+.link-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 16px/24px var(--font-kr);
+  color: var(--ink-900);
+  text-decoration: none;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+.link-go::after {
+  content: '→';
+  content: '→' / '';
+  display: inline-block;
+  font-family: var(--font-num);
+  font-weight: 500;
+  transition: transform var(--dur-hover) var(--ease);
+}
+
+/* 보조 행동 (문장 · 표 · 각주 안에서만): 밑줄 링크 */
 .link {
   display: inline-flex;
   align-items: center;
@@ -163,13 +317,81 @@ img {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
+  text-decoration-color: var(--ink-900);
   cursor: pointer;
+  transition: text-decoration-color var(--dur-hover) var(--ease);
 }
-.link:hover {
-  text-decoration-thickness: 2px;
+.link:active {
+  text-decoration-color: var(--ink-500);
 }
 
-/* 장소 표식: 8px 네모 (색은 style 로 --c) */
+/* 버튼 줄: 주 버튼 + 두 번째 버튼. 폰에서는 둘 다 한 줄 가득 */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* hover 는 마우스가 있는 화면에서만 (폰에서 누른 뒤 hover 모양이 남지 않게) */
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--btn-bg-hover, #000);
+  }
+  .btn-secondary:hover {
+    background: var(--btn2-bg-hover, #e6e9ed);
+    box-shadow: inset 0 0 0 1px var(--btn2-line-hover, transparent);
+  }
+  .link:hover {
+    text-decoration-thickness: 2px;
+  }
+  .link-go:hover {
+    text-decoration-line: underline;
+  }
+  .link-go:hover::after {
+    transform: translateX(3px);
+  }
+}
+
+/*
+ * 사이트 밖으로 가는 화살표 ↗ (DESIGN 7장: 밑줄은 글자에만, 화살표는 밑줄 밖).
+ * 링크 바로 안의 이름(class) 없는 aria-hidden 글자가 화살표다 (지원서 쓰기 ↗ · 5기 소식 받기 ↗ · 출처 ↗ …).
+ * - 문장 속 링크(class 없는 a): 화살표를 inline-block 으로 두면 밑줄이 화살표 아래로 이어지지 않는다.
+ * - 모양이 있는 링크(class 있는 a: .link · 꼬리말 · 출처 줄 …)는 대개 flex 라, 화살표에도 밑줄이 따로 그어져
+ *   글자 밑줄과 끊긴 두 토막이 됐다. 화살표를 흐름 밖(오른쪽 끝)으로 빼서 밑줄은 글자에만 남긴다.
+ *   세로 가운데는 flex 가 맞추고, 자리는 오른쪽 안쪽 여백(1.4em)으로 잡는다.
+ *   (:where 로 우선순위를 0 으로 둔다: 각 부품이 padding 을 정하면 그 값이 이긴다)
+ * - 바탕이 있는 버튼(.btn-primary 등)은 밑줄이 없으니 화살표를 흐름 안에 그대로 둔다.
+ * - 마우스를 올리면 화살표가 가리키는 쪽(오른쪽 위)으로 1px 움직인다.
+ */
+a > span[aria-hidden='true']:not([class]) {
+  display: inline-block;
+  margin-left: 0.18em;
+  text-decoration: none;
+  transition: transform var(--dur-open) var(--ease);
+}
+:where(a[class]:has(> span[aria-hidden='true']:not([class]))),
+.link:has(> span[aria-hidden='true']:not([class])) {
+  position: relative;
+  padding-right: 1.4em; /* 화살표 폭(0.92em) + 사이 0.45em: 바깥 링크(ExternalLink)와 같은 7px */
+}
+:where(a[class]) > span[aria-hidden='true']:not([class]) {
+  position: absolute;
+  right: 0;
+  margin: 0;
+}
+.btn-primary > span[aria-hidden='true']:not([class]),
+.btn-secondary > span[aria-hidden='true']:not([class]) {
+  position: static;
+  margin-left: 0; /* 사이는 버튼의 gap(8px) 하나로 */
+}
+@media (hover: hover) {
+  a:hover > span[aria-hidden='true']:not([class]) {
+    transform: translate(1px, -1px);
+  }
+}
+
+/* 장소 표식: 8px 네모 (색은 style 로 --c). 이야기 섹션 이름표 안에서는 10px (common/story.module.css) */
 .mark {
   display: inline-block;
   width: 8px;
@@ -191,9 +413,8 @@ img {
   font: 700 13px/1 var(--font-kr);
 }
 
-/* 상태 글자: '예시' 는 점선, '예정' 은 옅은 면 */
-.sample-badge,
-.soon-badge {
+/* 상태 글자: '예시' (지어낸 자리 표시 데이터) 는 점선 */
+.sample-badge {
   display: inline-flex;
   align-items: center;
   height: 22px;
@@ -202,12 +423,7 @@ img {
   font: var(--t-meta);
   color: var(--ink-700);
   white-space: nowrap;
-}
-.sample-badge {
   border: 1px dashed var(--line-strong);
-}
-.soon-badge {
-  background: var(--subtle);
 }
 
 /* 숫자 덩어리 */
@@ -215,22 +431,6 @@ img {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
 }
-
-/* 구글 4색 원 (첫 화면 · 모집에만, 최대 두 번) */
-.dots {
-  display: inline-flex;
-  gap: 4px;
-}
-.dots i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: block;
-}
-.dots i:nth-child(1) { background: var(--g-blue); }
-.dots i:nth-child(2) { background: var(--g-red); }
-.dots i:nth-child(3) { background: var(--g-yellow); }
-.dots i:nth-child(4) { background: var(--g-green); }
 
 .visually-hidden {
   position: absolute !important;
@@ -242,7 +442,134 @@ img {
 }
 
 @media (max-width: 767px) {
-  .btn-primary {
-    min-height: 52px;
+  /* 자손까지: ShareAction 처럼 display: contents 로 감싼 버튼도 폰에서 한 줄 가득 */
+  .btn-row :is(.btn-primary, .btn-secondary) {
+    flex: 1 1 100%;
+  }
+}
+
+/* ── 누르는 것 공통: 폰에서 눌렀을 때 반응 (버튼 · 행 모양은 각 부품이 :active 로) ── */
+button,
+[role='button'] {
+  touch-action: manipulation; /* 두 번 눌러 확대 대기(300ms) 없이 바로 반응 */
+}
+
+/*
+ * ── 그림 ──
+ * 프로젝트 표지(Plate, data-kind) 공통.
+ * - 불러오는 동안 빈 흰 틀 대신 옅은 면이 자리를 잡는다 (투명 PNG 인 로고 · 그림 표는 제외: 불투명한 화면 캡처만)
+ * - 눌러서 여는 카드(링크이거나 링크를 품은 줄)에 마우스를 올리면 화면 그림(screen · promo · mobile)이 틀 안에서 아주 조금 커진다.
+ *   틀(1px 괘선 · radius 20)은 그대로라 그림만 다가오는 느낌. 동작 줄이기면 커지지 않는다.
+ *   로고(logo)는 흰 판 위 작은 표식이라 커지지 않는다 (판 안에서 로고만 움직이면 흔들려 보인다).
+ */
+:is([data-kind='screen'], [data-kind='promo'], [data-kind='mobile']) > img {
+  background-color: var(--subtle);
+  transition: transform var(--dur-media) var(--ease);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :is(a[href], :has(a[href])):hover > :is([data-kind='screen'], [data-kind='promo'], [data-kind='mobile']) > img {
+    transform: scale(var(--media-zoom));
+  }
+}
+/* 키보드로 카드에 왔을 때도 같은 반응 (마우스와 같은 느낌을 받게) */
+@media (prefers-reduced-motion: no-preference) {
+  :is(a[href]:focus-visible, :has(a[href]:focus-visible)) > :is([data-kind='screen'], [data-kind='promo'], [data-kind='mobile']) > img {
+    transform: scale(var(--media-zoom));
+  }
+}
+
+/*
+ * ── 페이지 전환 (View Transitions, app/viewTransitions.ts 가 켠다) ──
+ * 스크롤에 따라 나타나는 움직임은 쓰지 않는다. 움직임은 '장소를 옮길 때' 한 번뿐:
+ * - 머리말은 그대로 있고(site-header), 본문만 바뀐다: 앞 페이지는 빨리 사라지고(120ms) 새 페이지가 떠오른다(240ms). 위치는 움직이지 않는다.
+ * - 메뉴 밑줄(nav-active)은 앞 메뉴에서 새 메뉴로 미끄러진다.
+ * - 홈 지도에서 그 건물이 화면에 보일 때 그 장소로 가면(data-vt=enter) 건물 쪽으로 조금 다가가며 사라진다 = 건물 앞(PlaceHero)으로 들어간다.
+ *   돌아올 때(data-vt=leave)는 거꾸로 건물에서 물러나며 지도가 나타난다. 기준점은 건물 가운데(--vt-x · --vt-y).
+ * '동작 줄이기'면 전환 자체를 켜지 않고(JS), 혹시 켜져도 여기서 멈춘다.
+ */
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+  }
+}
+/* 들어가기: 앞 화면이 건물 쪽으로 다가가며(점점 빠르게) 사라진다. 처음 30% 는 또렷하게 남겨 '다가간다'가 보이게 */
+@keyframes vt-enter-out {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+/* 물러나기: 지도가 건물 쪽에서 뒤로 물러나며(점점 느리게) 나타난다 */
+@keyframes vt-leave-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+::view-transition-old(root) {
+  animation: vt-out var(--dur-page-out) var(--ease) both;
+}
+::view-transition-new(root) {
+  animation: vt-in var(--dur-page-in) var(--ease) 60ms both;
+}
+html[data-vt='enter']::view-transition-old(root) {
+  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
+  animation: vt-enter-out 280ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+/* 앞 화면이 거의 사라진 뒤에 새 화면이 떠오른다 (두 화면 글자가 겹쳐 보이는 순간을 줄인다) */
+html[data-vt='enter']::view-transition-new(root) {
+  animation-delay: 220ms;
+}
+html[data-vt='leave']::view-transition-new(root) {
+  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
+  animation: vt-leave-in 360ms var(--ease) 60ms both;
+}
+::view-transition-group(nav-active) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--ease);
+}
+::view-transition-old(nav-active),
+::view-transition-new(nav-active) {
+  animation-duration: var(--dur-open);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .btn-primary,
+  .btn-secondary,
+  .link-go::after,
+  [data-kind] > img,
+  a > span[aria-hidden='true']:not([class]) {
+    transition: none;
+  }
+  .btn-primary:active,
+  .btn-secondary:active {
+    transform: none;
+  }
+  .link-go:hover::after {
+    transform: none;
   }
 }

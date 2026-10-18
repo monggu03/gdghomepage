@@ -1,10 +1,13 @@
-import type { Generation, Project, ScheduleEvent } from '@/domain/types'
+import { isStalePlan } from '@/content/plan'
+import type { RecruitStatus } from '@/content/recruitingStatus'
+import type { Project, ProjectImage, ScheduleEvent } from '@/domain/types'
 import { monthDay, weekday } from '@/lib/date'
 
 /**
- * 홈 화면 계산 (DOM 없음, homeData.test.ts 에 테스트).
+ * 홈 화면 계산 (DOM 없음, homeData.test.ts · applicantHome.test.ts 에 테스트).
  * 콘텐츠가 0건이어도, 행사가 60건 · 프로젝트가 20개를 넘어도 같은 코드로 그린다.
  * 날짜 표기는 docs/DESIGN.md 3장: '10.27 화', 해가 다르면 '2027.01.30 토'.
+ * dayLabel · nextEvent 는 features/now 도 쓴다.
  */
 
 const sameYear = (a: string, b: string) => a.slice(0, 4) === b.slice(0, 4)
@@ -20,24 +23,6 @@ export function shortDay(ymd: string, today: string): string {
   return sameYear(ymd, today) ? monthDay(ymd) : `${ymd.slice(0, 4)}.${monthDay(ymd)}`
 }
 
-/**
- * 기간: '10.13–12.29' · 같은 달 '2027.01.30–31' · 해를 넘기면 양쪽 모두 연도 '2026.11.02–2027.01.31'.
- * 하루짜리는 '10.27'.
- */
-export function spanLabel(start: string, end: string | undefined, today: string): string {
-  if (!end || end === start) return shortDay(start, today)
-  if (!sameYear(start, end)) return `${start.slice(0, 4)}.${monthDay(start)}–${end.slice(0, 4)}.${monthDay(end)}`
-  const head = shortDay(start, today)
-  if (start.slice(0, 7) === end.slice(0, 7)) return `${head}–${end.slice(8, 10)}`
-  return `${head}–${monthDay(end)}`
-}
-
-/** 문장 단위로 나눈다: 넓은 화면에서 문장마다 줄을 바꿔 뜻으로 끊기 위해 */
-export const sentences = (text: string) => text.split(/(?<=[.!?])\s+/).filter(Boolean)
-
-/** 'YYYY-MM' → 'YYYY.MM' */
-export const dotMonth = (ym: string) => ym.slice(0, 7).replace('-', '.')
-
 /** 행사가 끝난 날 (여러 날 행사는 마지막 날) */
 const endOf = (e: Pick<ScheduleEvent, 'date' | 'endDate'>) => e.endDate ?? e.date
 
@@ -52,68 +37,36 @@ export function nextEvent(
   return [...events].filter((e) => endOf(e) >= today && e.kind !== 'rest' && match(e)).sort(byDate)[0] ?? null
 }
 
-/**
- * 글자 표지에 적을 일정 n개: 다가오는 일정을 먼저 채우고, 모자라면 가장 최근에 끝난 일정으로 채운다.
- * 한 기수에 일정이 수십 개여도 표지에는 오늘과 가까운 n개만 날짜순으로.
- */
-export function coverRows(events: readonly ScheduleEvent[], today: string, match: (e: ScheduleEvent) => boolean, n = 4): ScheduleEvent[] {
-  const list = events.filter((e) => e.kind !== 'rest' && match(e))
-  const upcoming = list.filter((e) => endOf(e) >= today).sort(byDate)
-  const past = list.filter((e) => endOf(e) < today).sort((a, b) => byDate(b, a))
-  const picked = [...upcoming.slice(0, n), ...past.slice(0, Math.max(0, n - upcoming.length))]
-  return picked.sort(byDate)
-}
-
-/** 맞는 일정들의 처음 ~ 끝 날짜. 없으면 null */
-export function eventSpan(events: readonly ScheduleEvent[], match: (e: ScheduleEvent) => boolean): { start: string; end: string } | null {
-  const list = events.filter((e) => e.kind !== 'rest' && match(e))
-  if (list.length === 0) return null
-  return {
-    start: list.reduce((m, e) => (e.date < m ? e.date : m), list[0].date),
-    end: list.reduce((m, e) => (endOf(e) > m ? endOf(e) : m), endOf(list[0])),
-  }
-}
-
-const text = (e: ScheduleEvent) => [e.title, e.originalTitle, e.series].filter(Boolean).join(' ')
+/** 공개 페이지(https)에 올라간 일정인지. '4기 운영 계획' 같은 내부 계획은 아니다 */
+export const isPublished = (e: Pick<ScheduleEvent, 'source'>) => /^https:\/\//.test(e.source ?? '')
 
 /**
- * 다른 학교 · 챕터와 함께 여는 행사 (동홍동락, 동지톤, 합동 세미나, Inter-Chapter, 연합 컨퍼런스 등).
- * '컨퍼런스' 만으로는 고르지 않는다: 동국대 Dev Conference 처럼 우리끼리 여는 행사도 있다.
+ * 홈 띠 맨 아래 '다음 모임' 표: 공개 페이지가 있거나, 날짜가 확정된(G-Sprint 단계) 다가오는 첫 일정.
+ * 운영 계획에만 있는 일정은 확정되기 전까지 홈에 올리지 않고, 날짜가 지난 계획(isStalePlan)도 건너뛴다. 없으면 표를 그리지 않는다.
  */
-const JOINT = /동홍동락|동지톤|연합|합동|교류전|해커톤|hackathon|inter-?chapter/i
-export const isJointEvent = (e: ScheduleEvent) => e.kind === 'event' && JOINT.test(text(e))
-
-export const isSprintEvent = (e: ScheduleEvent) => e.kind === 'sprint' || /g-?sprint/i.test(text(e))
-
-export const isSessionEvent = (e: ScheduleEvent) => e.kind === 'session'
-
-/** gdg.community.dev 에 올라간 지난 행사 수 (휴회 제외) */
-export function pastPublishedCount(events: readonly ScheduleEvent[], today: string): number {
-  return events.filter((e) => e.kind !== 'rest' && endOf(e) < today && (e.source ?? '').includes('gdg.community.dev')).length
+export function homeNextEvent(events: readonly ScheduleEvent[], today: string, confirmedDates: readonly string[]): ScheduleEvent | null {
+  return nextEvent(events, today, (e) => !isStalePlan(e, today) && (isPublished(e) || confirmedDates.includes(e.date)))
 }
 
-/** 끝난 연합 행사, 최근 것부터 */
-export function pastJointEvents(events: readonly ScheduleEvent[], today: string): ScheduleEvent[] {
-  return events.filter((e) => isJointEvent(e) && endOf(e) < today).sort((a, b) => byDate(b, a))
+/** 큰 숫자 한 줄을 숫자 · 단위 조각으로: '5팀 27명' → 5 · 팀 · 27 · 명 (단위 앞뒤 공백은 떼고 화면이 간격을 둔다) */
+export function keyParts(text: string): { text: string; num: boolean }[] {
+  return text
+    .split(/(\d[\d:.]*)/)
+    .map((t) => ({ text: t.trim(), num: /^\d/.test(t) }))
+    .filter((t) => t.text !== '')
 }
 
-/** GitHub 저장소가 있는 프로젝트 수 */
-export const projectsWithRepo = (projects: readonly Project[]) => projects.filter((p) => Boolean(p.repo)).length
+/** 그날이 지났는지 (그날 당일은 아직 지나지 않음) */
+export const isAfter = (today: string, day: string) => today > day
+
+/** 템플릿의 {key} 를 값으로 바꾼다. 모르는 key 는 그대로 둔다 */
+export function fill(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m))
+}
 
 const recent = (a: Project, b: Project) => b.year - a.year || (b.generation ?? 0) - (a.generation ?? 0) || a.name.localeCompare(b.name, 'ko')
 
-/**
- * 최근 프로젝트 limit 개: 한 줄 설명이 있는 것을 먼저 고르고, 모자라면 설명 없는 것으로 채운다.
- * 고른 것은 해 → 기수 → 이름 순. 진행 중인 것은 데모데이 전이라 뺀다
- */
-export function latestProjects(projects: readonly Project[], limit: number): Project[] {
-  const done = projects.filter((p) => p.status === 'done').sort(recent)
-  const described = done.filter((p) => p.summary?.trim())
-  const bare = done.filter((p) => !p.summary?.trim())
-  return [...described, ...bare].slice(0, limit).sort(recent)
-}
-
-/** 프로젝트 카드 위 한 줄: 'Solution Challenge · 2024 · 2기' (프로그램 이름에 해가 이미 있으면 한 번만) */
+/** 프로젝트 이름표 한 줄: 'Solution Challenge 2026 · 3기' (프로그램 이름에 해가 이미 있으면 해를 한 번만) */
 export function projectMeta(p: Pick<Project, 'program' | 'year' | 'generation'>): string {
   const parts = [p.program]
   if (!p.program.includes(String(p.year))) parts.push(String(p.year))
@@ -122,53 +75,82 @@ export function projectMeta(p: Pick<Project, 'program' | 'year' | 'generation'>)
 }
 
 /**
- * 기수 기간: '2022.09–2023.08' · 지금 기수는 '2026.09–'.
- * 공개 기록으로 시작 달을 모르면 끝 달만 ('–2023.08'), 둘 다 모르면 빈 글자 (화면에서 숨김).
+ * 홈 주장 제목의 숫자 ('팀으로 만들어 공개한 서비스 {n}개', '{sc}개는 Google Solution Challenge에서').
+ * 받는 목록은 이미 공개 저장소가 있는 것만 (content isPublicProject). 진행 중인 프로젝트는 세지 않는다. 커밋 수는 쓰지 않는다.
  */
-export function generationPeriod(g: Pick<Generation, 'start' | 'end'>): string {
-  if (!g.start && !g.end) return ''
-  return `${g.start ? dotMonth(g.start) : ''}–${g.end ? dotMonth(g.end) : ''}`
+export function projectCounts(projects: readonly Pick<Project, 'status' | 'program'>[]): { done: number; solutionChallenge: number } {
+  const done = projects.filter((p) => p.status === 'done')
+  return { done: done.length, solutionChallenge: done.filter((p) => /^Solution Challenge\b/.test(p.program)).length }
 }
 
-/** 연혁은 오래된 기수부터 */
-export const sortGenerations = (gens: readonly Generation[]) => [...gens].sort((a, b) => a.n - b.n)
-
-/** '그룹 멤버 244명' 의 기준: 'gdg.community.dev 기준 2026.10' */
-export function membersBasis(asOf: string): string {
-  return `gdg.community.dev 기준 ${dotMonth(asOf)}`
-}
-
-/** 받침이 있으면 '을', 없으면 '를' (한글이 아니면 '를') */
-function objectJosa(word: string): string {
-  const code = word.charCodeAt(word.length - 1) - 0xac00
-  return code >= 0 && code <= 11171 && code % 28 !== 0 ? '을' : '를'
-}
-
-/** 모집 시기를 말로: 한 달 안 1–10일이면 '9월 초', 21일부터면 '8월 말', 그 밖은 '8월'. 달을 넘기면 '8–9월' */
-export function monthWords(start: string, end: string = start): string {
-  const m = +start.slice(5, 7)
-  if (start.slice(0, 7) !== end.slice(0, 7)) return `${m}–${+end.slice(5, 7)}월`
-  if (+end.slice(8, 10) <= 10) return `${m}월 초`
-  if (+start.slice(8, 10) >= 21) return `${m}월 말`
-  return `${m}월`
-}
+/** 그림 설명에서 기기 표시를 뗀 화면 이름: '홈 (데스크톱)' → '홈' */
+const screenName = (img: ProjectImage) => (img.caption ?? '').replace(/\s*\([^)]*\)\s*$/, '')
 
 /**
- * 지난 모집 한 줄: '지난 4기는 8월에 코어 멤버, 9월 초에 마케팅 코어 · 일반 멤버를 모집했습니다.'
- * 기간이 있는 단계(모집)만 쓰고 (OT 처럼 하루짜리는 뺀다), 같은 시기의 단계는 한 묶음으로. 쓸 단계가 없으면 null
+ * 큰 타일에 거는 실제 그림: 넓은 그림 하나(실제 화면 screen, 없으면 소개 그림 promo) + 폰 화면 하나.
+ * 폰 화면은 넓은 그림이 실제 화면일 때만 겹친다 (소개 그림에는 이미 폰이 그려져 있다).
+ * 같은 화면('홈 (데스크톱)' ↔ '홈 (모바일)')이 있으면 그것, 없으면 첫 폰 화면. 로고 · 구조도는 큰 타일에 걸지 않는다.
  */
-export function pastRecruitLine(generation: number, steps: readonly { label: string; start: string; end?: string }[]): string | null {
-  const groups: { when: string; who: string[] }[] = []
-  for (const st of steps) {
-    if (!st.end) continue
-    const when = monthWords(st.start, st.end)
-    const who = st.label.replace(/\s*모집$/, '')
-    const prev = groups[groups.length - 1]
-    if (prev?.when === when) prev.who.push(who)
-    else groups.push({ when, who: [who] })
+export function tileShots(gallery: readonly ProjectImage[]): { wide?: ProjectImage; phone?: ProjectImage } {
+  const wide = gallery.find((img) => img.kind === 'screen') ?? gallery.find((img) => img.kind === 'promo')
+  if (wide?.kind !== 'screen') return { wide }
+  const phones = gallery.filter((img) => img.kind === 'mobile')
+  return { wide, phone: phones.find((img) => screenName(img) === screenName(wide)) ?? phones[0] }
+}
+
+const IMAGE_RANK: Record<string, number> = { screen: 0, promo: 1, mobile: 2, logo: 3, diagram: 4 }
+
+/**
+ * 홈에 걸 프로젝트 n개: 고른 id 순서대로, 없는 id · 완성되지 않은 것은 건너뛰고,
+ * 모자라면 그림(화면 → 소개 → 로고)이 있고 설명이 있는 최근 프로젝트로 채운다.
+ */
+export function pickProjects(projects: readonly Project[], ids: readonly string[], n: number): Project[] {
+  const byId = new Map(projects.map((p) => [p.id, p]))
+  const picked = ids.map((id) => byId.get(id)).filter((p): p is Project => Boolean(p && p.status === 'done'))
+  const rest = projects
+    .filter((p) => p.status === 'done' && !picked.includes(p))
+    .sort((a, b) => (IMAGE_RANK[a.cover?.kind ?? ''] ?? 9) - (IMAGE_RANK[b.cover?.kind ?? ''] ?? 9) || Number(Boolean(b.summary)) - Number(Boolean(a.summary)) || recent(a, b))
+  return [...picked, ...rest].slice(0, n)
+}
+
+/** 자주 묻는 질문 n개: 고른 id 순서대로, 모자라면 출처가 있는 다른 질문으로 채운다 (common/JoinStrip 이 쓴다. 이름 · 모양을 바꾸지 않는다) */
+export function pickFaqs<T extends { id: string; source?: string }>(faqs: readonly T[], ids: readonly string[], n: number): T[] {
+  const sourced = faqs.filter((f) => Boolean(f.source))
+  const picked = ids.map((id) => sourced.find((f) => f.id === id)).filter((f): f is T => Boolean(f))
+  return [...picked, ...sourced.filter((f) => !picked.includes(f))].slice(0, n)
+}
+
+/** 홈에 실을 수 있는 '사람' 한 줄: 공개 동의 기록이 있고 말이 비어 있지 않은 것만 */
+export const isShowableVoice = (v: { quote: string; name: string; consent?: { date: string; by: string } | null }) =>
+  Boolean(v.quote.trim() && v.name.trim() && v.consent?.date && v.consent.by)
+
+/**
+ * 모집 상태 한 낱말 + 덧붙일 줄 (첫 화면). 미정인 것은 지금 상태 · 지난 시기 · 먼저 알릴 채널 (docs/DESIGN.md 10장)
+ */
+export function statusWords(st: RecruitStatus): { state: string; more: string[] } {
+  const day = (ymd?: string) => (ymd ? monthDay(ymd) : '')
+  const some = (xs: (string | null | undefined | false)[]) => xs.filter((x): x is string => Boolean(x))
+  switch (st.state) {
+    case 'open':
+      return { state: '지금 받고 있음', more: some([st.deadline && `${day(st.deadline)} 마감`]) }
+    case 'soon':
+      return { state: `${day(st.opensAt)} 열림`, more: some([st.deadline && `${day(st.deadline)} 마감`, '인스타그램에 먼저 안내']) }
+    case 'ended':
+      return { state: '마감', more: ['다음 소식은 인스타그램에 먼저'] }
+    default:
+      return { state: '아직 열리지 않음', more: some([st.lastWindow && st.lastGeneration ? `지난 ${st.lastGeneration}기는 ${st.lastWindow}에 모집` : null, '열리면 인스타그램에 먼저']) }
   }
-  if (groups.length === 0) return null
-  const tail = groups[groups.length - 1].who
-  const parts = groups.map((g) => `${g.when}에 ${g.who.join(' · ')}`).join(', ')
-  return `지난 ${generation}기는 ${parts}${objectJosa(tail[tail.length - 1])} 모집했습니다.`
+}
+
+/** 페이지 끝(common/JoinStrip)의 모집 상태 한 문장 (content/story.ts CLOSING.status 의 틀을 채운다). 이름 · 모양을 바꾸지 않는다 */
+export function closingStatusLine(
+  st: RecruitStatus,
+  t: { unscheduled: string; soon: string; open: string; openUntil: string; ended: string },
+  handle: string,
+): string {
+  const vars = { gen: st.generation, handle, opens: st.opensAt ? monthDay(st.opensAt) : '', deadline: st.deadline ? monthDay(st.deadline) : '' }
+  if (st.state === 'open') return fill(st.deadline ? t.openUntil : t.open, vars)
+  if (st.state === 'soon' && st.opensAt) return fill(t.soon, vars)
+  if (st.state === 'ended') return fill(t.ended, vars)
+  return fill(t.unscheduled, vars)
 }

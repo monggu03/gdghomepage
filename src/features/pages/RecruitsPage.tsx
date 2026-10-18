@@ -1,172 +1,185 @@
+import { useMemo } from 'react'
 import { PLACE_BY_ID, placeColor } from '@/config/places'
 import { SITE } from '@/config/site'
-import { CHAPTER, FAQS, RECRUITING } from '@/content'
+import { CHAPTER, EVENTS, FAQS, RECRUITING } from '@/content'
+import { recruitStatus, type RecruitStatus } from '@/content/recruitingStatus'
+import { useSchedule } from '@/data/queries'
+import { StorySection } from '@/features/common'
+import { Term } from '@/features/glossary/Term'
+import { PlaceHero, type DirectoryRow } from '@/features/placehero/PlaceHero'
 import { useToday } from '@/hooks/useToday'
-import { dateLabel, hostOf, isUrl, spanDays } from './format'
-import { ExternalLink, PageHead, Section, StateLine } from './PageParts'
-import { SpanStrip } from './Timelines'
+import { dotDate, pageSources } from './community/pageSources'
+import { PageSources } from './community/Signage'
+import { useHashScroll } from './community/useHashScroll'
+import { Section, StateLine } from './PageParts'
+import { buildBatches } from './recruits/batches'
+import { FaqTabs } from './recruits/FaqTabs'
+import { eligibilityFacts } from './recruits/eligibility'
+import { Eligibility, Parts } from './recruits/Intro'
+import { SemesterPicture } from './recruits/Semester'
+import { ShareAction } from './recruits/ShareAction'
+import { statusView } from './recruits/status'
 import s from './pages.module.css'
 import r from './recruits.module.css'
 
-const RECRUIT_COLOR = placeColor('recruits')
+/** 처음부터 펼쳐 둘 질문: 모집이 열리지 않은 동안 가장 먼저 묻는 것 */
+const OPEN_FAQ = ['when-recruit']
 
-interface Step {
-  id: string
-  label: string
-  start: string
-  end?: string
-  /** '면접 2026.09.11 · 최종 발표 2026.09.12' 같은 덧붙임 */
-  note?: string
-  source?: string
-}
-
-/** 출처 한 줄: 주소면 도메인 링크, 글이면 그대로 */
-function Source({ source, context }: { source?: string; context: string }) {
-  if (!source) return null
+/**
+ * 머리 행동: 주 버튼 하나 + 두 번째 버튼 '친구에게 알려 주기'.
+ * 버튼 이름은 사이트 전체에서 '5기 소식 받기'(인스타그램) · '지원서 쓰기'(모집 중) · '친구에게 알려 주기' 세 가지만 쓴다.
+ * 소식 받기는 이 페이지에서 여기 한 번 (꼬리말에도 같은 이름의 링크가 있다). 폰에서는 두 버튼이 한 줄 가득.
+ */
+function StatusActions({ st, primary }: { st: RecruitStatus; primary: 'apply' | 'channel' }) {
+  const handle = SITE.links.instagramHandle
+  const apply = primary === 'apply' && st.applyUrl
   return (
-    <span className={r.source}>
-      출처{' '}
-      {isUrl(source) ? (
-        <ExternalLink href={source} context={context} className={s.inlineLink}>
-          {hostOf(source)}
-        </ExternalLink>
+    <span className={`btn-row ${r.actions}`}>
+      {apply ? (
+        <a className="btn-primary" href={st.applyUrl} target="_blank" rel="noreferrer">
+          지원서 쓰기
+          <span className="visually-hidden"> (새 창)</span>
+          <span aria-hidden="true">↗</span>
+        </a>
       ) : (
-        source
+        <a className="btn-primary" href={st.channelUrl} target="_blank" rel="noreferrer">
+          {st.generation}기 소식 받기
+          <span className="visually-hidden"> (인스타그램 {handle}, 새 창)</span>
+          <span aria-hidden="true">↗</span>
+        </a>
       )}
+      <ShareAction
+        className="btn-secondary"
+        title={`${SITE.shortName} 지원 안내`}
+        text={
+          st.state === 'open'
+            ? `${SITE.shortName} ${st.generation}기 모집 중입니다.`
+            : `${SITE.shortName} ${st.generation}기 모집 소식은 인스타그램 ${handle}에 가장 먼저 올라옵니다.`
+        }
+      />
     </span>
   )
 }
 
-/** 지난 모집 한 기수: 날 수에 비례한 줄 그림 + 단계 목록(이름 · 날짜 · 날 수 · 출처) */
-function History({ steps, today }: { steps: readonly Step[]; today: string }) {
-  const labels = Object.fromEntries(steps.map((st) => [st.id, st.label]))
-  const first = steps.map((st) => st.start).sort()[0]
-  const last = steps.map((st) => st.end ?? st.start).sort().at(-1) ?? first
-  return (
-    <>
-      <SpanStrip
-        spans={steps.map((st) => ({ id: st.id, start: st.start, end: st.end && st.end !== st.start ? st.end : undefined }))}
-        labels={labels}
-        ends={[dateLabel(first, null, today), dateLabel(last, null, today)]}
-      />
-      <ol className={r.steps}>
-        {steps.map((st) => {
-          const end = st.end && st.end !== st.start ? st.end : null
-          return (
-            <li key={st.id} className={r.step}>
-              <p className={r.stepLabel}>{st.label}</p>
-              <p className={`${r.stepWhen} num`}>
-                <time dateTime={st.start}>{dateLabel(st.start, end, today)}</time>
-                {end && <span className={r.days}>{spanDays(st.start, end)}일</span>}
-              </p>
-              {st.note && <p className={r.stepNote}>{st.note}</p>}
-              <p className={r.stepSource}>
-                <Source source={st.source} context={st.label} />
-              </p>
-            </li>
-          )
-        })}
-      </ol>
-    </>
-  )
-}
-
-/** 지원 안내: 지금 상태 → 지난 모집 → 자주 묻는 질문 → 연락 */
+/**
+ * 지원 안내 (모집 랜딩, 시안 E).
+ * 모집 상태(날짜로 계산: content/recruitingStatus.ts) + 주 버튼 · 두 번째 버튼 → 옅은 회색 '지원 자격'(주장 + 흰 판 셋)
+ * → 들어오면 이런 한 해(참고, 달별 일정 하나) → '네 파트'(2 × 2 판 + 지난 프로젝트 아이콘) → 자주 묻는 질문(참고) + 출처 한 줄.
+ * 면: 흰(머리) → 옅은 회색 → 흰 → 흰 → 흰 → 먹색 꼬리말. 페이지 끝 JoinStrip 은 넣지 않는다 (이 페이지 자체가 같은 내용).
+ * 각주는 두 개까지(한 해의 계획 일정 · 파트 예의 기준), 출처 주소는 맨 끝 한 줄에만.
+ * 연락처는 꼬리말과 '문의' 질문에 있어 따로 섹션을 두지 않는다.
+ */
 export function RecruitsPage() {
   const today = useToday()
-  const current = RECRUITING.current
-  const history = [...RECRUITING.history].sort((a, b) => b.generation - a.generation)
-  const latest = history[0]
-  const statusTitle = current.status === 'open' ? `${current.generation}기 모집 중` : `${current.generation}기 모집 일정 미정`
+  const { data } = useSchedule()
+  // 일정은 저장소 스냅샷과 같은 내용이다. 서버에서 받기 전에도 한 해 일정을 그릴 수 있게 스냅샷으로 먼저 그린다
+  const events = data ?? EVENTS
+  const st = recruitStatus(today)
+  const view = statusView(st, today, SITE.links.instagramHandle)
+  const isOpen = st.state === 'open'
+  const batches = useMemo(() => buildBatches(RECRUITING, events, isOpen), [events, isOpen])
+  const latest = batches.find((b) => b.status === 'closed')
+  const semesterGen = latest?.generation ?? st.generation - 1
+  useHashScroll(true)
+  const who = eligibilityFacts()
+
+  const directory: DirectoryRow[] = [
+    { label: '지원 자격', value: '전공 · 학년 무관', href: '#who' },
+    { label: '들어오면 이런 한 해', value: <>화요일 <span className="num">18:00</span></>, href: '#year' },
+    { label: '파트', value: <><span className="num">4</span>개</>, href: '#parts' },
+    { label: '자주 묻는 질문', value: <><span className="num">{FAQS.length}</span>개</>, href: '#faq' },
+  ]
+
+  // 이 페이지가 기대는 출처: 지원서 · 모집 게시물 · 행사 페이지 · 운영 계획 · README (페이지 끝 한 줄)
+  const sources = pageSources(
+    [
+      ...FAQS.map((f) => f.source),
+      ...(latest?.steps.map((x) => x.source) ?? []),
+      ...events.filter((e) => e.generation === semesterGen).map((e) => e.source),
+      CHAPTER.github,
+    ],
+    { 'gdg.community.dev': CHAPTER.chapterPage, 'instagram.com': st.channelUrl, 'github.com': CHAPTER.github },
+  )
+
+  const yearDesc = (
+    <>
+      {semesterGen}기가 실제로 보내는 한 해입니다. 매주 화요일 세션 사이에 <Term id="g-sprint" more /> 단계와 연합 행사가 끼고, 시험 기간에는 쉽니다.
+    </>
+  )
 
   return (
     <div className={`container ${s.page}`}>
-      <PageHead
-        mark={RECRUIT_COLOR}
-        eyebrow={PLACE_BY_ID.recruits.sub}
-        title="지원 안내"
-        lead="GDGoC DGU는 기수마다 새 멤버를 모집합니다. 지금 상태와 지난 모집 기록, 자주 묻는 질문을 한곳에 모았습니다."
-        meta={
+      <PlaceHero
+        place="recruits"
+        state={isOpen ? 'open' : 'closed'}
+        eyebrow={PLACE_BY_ID.recruits.label}
+        title={
+          view.titleSub ? (
+            <>
+              {view.title}
+              <span className={r.titleSep}> · </span>
+              <span className={r.titleSub}>{view.titleSub}</span>
+            </>
+          ) : (
+            view.title
+          )
+        }
+        lead={
           <>
-            모집 기록은 인스타그램 모집 게시물 기준 · <span className="num">{dateLabel(RECRUITING.updatedAt, null, today)}</span> 갱신
+            {view.dday && (
+              <span className={r.dday}>
+                <span className="visually-hidden">{view.dday.what} </span>
+                <span className="num">{view.dday.label}</span>
+              </span>
+            )}
+            {view.lines.map((line) => (
+              <span key={line} className={r.leadLine}>
+                {line}
+              </span>
+            ))}
           </>
         }
+        meta={<StatusActions st={st} primary={view.primary} />}
+        directory={directory}
       />
 
-      <Section id="status" title={statusTitle} desc="모집이 열리면 이 자리에 기간과 지원 방법을 올립니다.">
-        <div className={r.status}>
-          <p className={r.message}>{current.message}</p>
-          <a className="btn-primary" href={current.channel} target="_blank" rel="noreferrer">
-            인스타그램에서 소식 받기
-            <span className="visually-hidden"> (새 창)</span>
-            <span aria-hidden="true">↗</span>
-          </a>
-        </div>
-      </Section>
-
-      {latest && latest.steps.length > 0 && (
-        <Section
-          id="history"
-          title={`${latest.generation}기는 이렇게 모집했습니다`}
-          desc={`${current.generation}기 일정이 아닙니다. 다음 모집 시기를 가늠할 수 있도록 남긴 기록입니다.`}
+      {who.some((f) => f.id === 'major') && (
+        <StorySection
+          id="who"
+          tone="field"
+          eyebrow="지원 자격"
+          placeColor={placeColor('recruits')}
+          title="전공 · 학년과 상관없이 지원할 수 있습니다"
+          sub={`${semesterGen}기 지원서에 적힌 조건입니다. ${st.generation}기 조건은 모집 공지에서 다시 알립니다.`}
         >
-          <History steps={latest.steps} today={today} />
-        </Section>
+          <Eligibility facts={who} />
+        </StorySection>
       )}
 
-      <Section id="faq" title="자주 묻는 질문" desc="공개된 출처가 있는 답만 싣습니다.">
-        {FAQS.length === 0 ? (
-          <StateLine>답과 출처를 함께 정리하고 있습니다. 그동안 궁금한 점은 아래 연락처로 물어봐 주세요.</StateLine>
-        ) : (
-          <ul className={r.faq}>
-            {FAQS.map((f) => (
-              <li key={f.id}>
-                <details className={r.qa} id={`faq-${f.id}`}>
-                  <summary>
-                    <span className={r.q}>{f.q}</span>
-                    <span className={r.sign} aria-hidden="true" />
-                  </summary>
-                  <div className={r.a}>
-                    <p>{f.a}</p>
-                    {f.source && (
-                      <p className={r.aSource}>
-                        <Source source={f.source} context={f.q} />
-                      </p>
-                    )}
-                  </div>
-                </details>
-              </li>
-            ))}
-          </ul>
-        )}
+      <Section id="year" title="들어오면 이런 한 해" desc={yearDesc}>
+        <SemesterPicture events={events} today={today} generation={semesterGen} />
       </Section>
 
-      <Section id="contact" title="연락" desc="지원 전에 궁금한 점, 다른 학교 챕터나 연사 · 협업 제안 모두 아래로 보내 주세요.">
-        <dl className={r.contact}>
-          <div>
-            <dt>이메일</dt>
-            <dd>
-              <span className={r.email}>{CHAPTER.email}</span>
-              <a className="link" href={`mailto:${CHAPTER.email}`}>
-                메일 쓰기
-              </a>
-            </dd>
-          </div>
-          <div>
-            <dt>인스타그램</dt>
-            <dd>
-              <ExternalLink href={SITE.links.instagram}>{SITE.links.instagramHandle}</ExternalLink>
-              <span className={r.contactNote}>모집 · 행사 공지</span>
-            </dd>
-          </div>
-          <div>
-            <dt>챕터 페이지</dt>
-            <dd>
-              <ExternalLink href={CHAPTER.chapterPage}>{hostOf(CHAPTER.chapterPage)}</ExternalLink>
-              <span className={r.contactNote}>행사 등록 · 지난 행사</span>
-            </dd>
-          </div>
-        </dl>
+      {FAQS.some((f) => f.id === 'parts') && (
+        <StorySection
+          id="parts"
+          tone="field"
+          eyebrow="네 파트"
+          placeColor={placeColor('recruits')}
+          title="파트마다 같은 문제를 각자 풀고 비교합니다"
+          sub={`${semesterGen}기는 Frontend · Backend · AI/ML · Product Design 네 파트입니다. 파트마다 코어 멤버가 세션을 이끌고, 강의 대신 서로의 풀이와 그 이유를 봅니다.`}
+        >
+          <Parts />
+        </StorySection>
+      )}
+
+      <Section id="faq" title="자주 묻는 질문" desc="지원하기 전에 묻는 것과 들어와서 하는 것을 나눴습니다.">
+        {FAQS.length === 0 ? (
+          <StateLine>답을 정리하고 있습니다. 그동안 궁금한 점은 {CHAPTER.email}로 물어봐 주세요.</StateLine>
+        ) : (
+          <FaqTabs faqs={FAQS} open={OPEN_FAQ} />
+        )}
+        <PageSources items={sources} updated={<>모집 기록 <span className="num">{dotDate(RECRUITING.updatedAt)}</span> 갱신</>} />
       </Section>
     </div>
   )

@@ -52,6 +52,10 @@
 .mullionL { stroke: var(--wall-left); stroke-width: 1.6; }
 .mullionR { stroke: var(--wall-right); stroke-width: 1.6; }
 .door { fill: var(--ink-700); }
+/* 닫힌 문 (하위 페이지 장면에서 '문 닫음' 상태일 때만): 벽보다 한 단 진한 회색 두 짝 */
+.doorShut { fill: #b9bec6; stroke: var(--line-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.doorSeam { stroke: #8f959e; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.doorHandle { stroke: var(--ink-700); stroke-width: 1.4; stroke-linecap: round; }
 
 /* 강당 지붕 위 발표 화면 */
 .screen { fill: var(--paper); }

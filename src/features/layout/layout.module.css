@@ -3,9 +3,13 @@
   position: sticky;
   top: env(safe-area-inset-top, 0px);
   z-index: 50;
+  /* 폰 머리말 버튼을 숨길 폭은 화면이 아니라 실제로 남은 폭(스크롤 막대 뺀 폭)으로 잰다 */
+  container: header / inline-size;
   background: var(--paper);
   box-shadow: inset 0 -1px 0 transparent;
   transition: box-shadow var(--dur-hover) var(--ease);
+  /* 페이지를 옮길 때 머리말은 그대로 두고 본문만 바뀌게 (global.css 페이지 전환) */
+  view-transition-name: site-header;
 }
 /* 노치 영역(폰 상태 표시줄 아래)으로 본문이 비치지 않게 */
 .header::before {
@@ -61,20 +65,46 @@
   white-space: nowrap;
   transition: color var(--dur-hover) var(--ease);
 }
-.navLink:hover {
-  color: var(--ink-900);
-}
 .navActive {
   color: var(--ink-900);
 }
-.navActive::after {
-  content: '';
+/*
+ * 메뉴 밑줄 두 가지 (같은 자리 · 같은 두께):
+ * - 지금 페이지(.navBar): 먹색. 페이지를 옮기면 새 메뉴 아래로 미끄러진다
+ * - 마우스를 올린 메뉴(::after): 옅은 회색이 가운데에서 펴진다 = '누르면 여기로 밑줄이 온다'
+ */
+.navBar,
+.navLink::after {
   position: absolute;
   left: 12px;
   right: 12px;
   bottom: 6px;
   height: 2px;
+}
+.navBar {
   background: var(--ink-900);
+  view-transition-name: nav-active;
+}
+.navLink::after {
+  content: '';
+  background: var(--line-strong);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition:
+    opacity var(--dur-hover) var(--ease),
+    transform var(--dur-open) var(--ease);
+}
+.navActive::after {
+  display: none;
+}
+@media (hover: hover) {
+  .navLink:hover {
+    color: var(--ink-900);
+  }
+  .navLink:hover::after {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .tools {
@@ -82,7 +112,6 @@
   align-items: center;
   gap: 12px;
   margin-left: auto;
-  margin-right: -10px; /* 아이콘 버튼 안쪽 여백만큼 바깥 줄에 맞춘다 */
 }
 .iconBtn {
   display: grid;
@@ -95,10 +124,16 @@
   background: none;
   color: var(--ink-900);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: background var(--dur-hover) var(--ease);
 }
-.iconBtn:hover {
-  background: var(--subtle);
+@media (hover: hover) {
+  .iconBtn:hover {
+    background: var(--subtle);
+  }
+}
+.iconBtn:active {
+  background: var(--line);
 }
 .iconBtn svg {
   width: 20px;
@@ -112,6 +147,81 @@
   display: none;
 }
 
+/*
+ * 아직 열지 않은 장소 옆 '준비 중' (분류 태그 모양: 바탕 없이 1px 괘선).
+ * 꼬리말 둘러보기에서만 쓴다 (머리말 · 폰 메뉴는 메뉴 이름만: 맨 위에 미완성 표시를 내걸지 않는다).
+ * 먹색 꼬리말에서는 .on-dark 가 선 · 글자 단계를 바꿔 끼운다.
+ */
+.soon {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-tag);
+  font: 500 13px/1 var(--font-kr);
+  color: var(--ink-700);
+  white-space: nowrap;
+}
+
+/*
+ * 지원 행동 (ApplyLink): 모집 상태를 따른다. 모양은 두 번째 버튼 작은 크기(global .btn-secondary.btn-sm: 높이 40 · radius 10 · 옅은 면).
+ * 평소(모집 전 · 마감 뒤): '지원 안내'. 상태 점이 없어 '지금 열려 있다'로 읽히지 않는다.
+ * 모집 중: '지원서 쓰기 | 10.31 마감 ↗' (머리말에서도 두 번째 버튼: 첫 화면의 먹색 주 버튼과 겹치지 않게).
+ * 지원 안내 페이지에 있을 때(.applyActive): 먹색 바탕 · 흰 글자 = '지금 여기'.
+ */
+.apply {
+  gap: 8px;
+  white-space: nowrap;
+  flex: none;
+}
+.applyActive {
+  --btn2-bg: var(--ink-900);
+  --btn2-bg-hover: #000;
+  --btn2-ink: #fff;
+  --btn2-line: transparent;
+  --btn2-line-hover: transparent;
+}
+/* 테두리 버튼 안의 ↗ 는 밑줄이 없으니 흐름 안에 둔다 (global.css 바깥 화살표 규칙에서 뺀다) */
+.apply > span[aria-hidden='true'],
+.applySheet > span[aria-hidden='true'] {
+  position: static;
+}
+.applySheet:active {
+  transform: scale(var(--press));
+}
+/* 모집 중 (폰 메뉴 시트): 먹색 바탕 */
+.applySheet.applyNow,
+.applySheet.applyActive {
+  background: var(--ink-900);
+  color: #fff;
+}
+@media (hover: hover) {
+  .applySheet.applyNow:hover,
+  .applySheet.applyActive:hover {
+    background: #000;
+  }
+}
+/* 마감일: 가는 세로 괘선 뒤 옅은 글자 */
+.applyDue {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line-strong);
+  font: 500 13px/1 var(--font-kr);
+  color: var(--ink-700);
+}
+.applyActive .applyDue {
+  border-color: var(--band-line);
+  color: var(--band-ink-2);
+}
+/* .apply.* : global .btn-secondary(inline-flex)보다 앞서도록 두 class 로 */
+.apply.applyBar {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .nav {
     display: none;
@@ -119,8 +229,40 @@
   .menuBtn {
     display: grid;
   }
+  /* 메뉴 줄이 없으니 워드마크 오른쪽 여백은 도구 묶음과의 최소 간격만 */
+  .brand {
+    margin-right: 8px;
+  }
   .tools {
+    gap: 0;
+    margin-right: -12px; /* 아이콘 버튼 안쪽 여백만큼 바깥 줄에 맞춘다 */
+  }
+  .apply.applyWide {
+    display: none;
+  }
+  /* 폰 머리말: 글자만 (마감일 · 새 창 표시는 시트에서) */
+  .apply.applyBar {
+    display: inline-flex;
     gap: 4px;
+    margin-right: 4px;
+    padding: 0 10px;
+  }
+  .applyBar > [aria-hidden='true'] {
+    display: none;
+  }
+}
+/*
+ * 워드마크와 겹치는 아주 좁은 폭: 지원 버튼은 메뉴 시트 안에만.
+ * 워드마크 149 + 버튼 + 아이콘 둘 88 + 양옆 여백 40 이 들어가는지로 정했다 ('지원 안내' 77 · '지원서 쓰기' 90)
+ */
+@container header (max-width: 353px) {
+  .apply.applyBar {
+    display: none;
+  }
+}
+@container header (max-width: 366px) {
+  .apply.applyBar.applyNow {
+    display: none;
   }
 }
 
@@ -137,19 +279,49 @@
   border: 0;
   background: var(--paper);
   color: var(--ink-900);
+  /*
+   * 열 때 320ms 위에서 8px 내려오며 나타나고, 닫을 때 140ms 로 빠르게 사라진다.
+   * 닫히는 동안에도 맨 위 층(top layer)에 남도록 overlay · display 를 함께 넘긴다 (지원하지 않는 브라우저는 바로 닫힌다)
+   */
+  z-index: 100;
+  /* 닫히는 동안에도 열린 때와 같은 배치를 지킨다 ([open] 이 먼저 빠지므로 방향은 여기에) */
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--dur-close) var(--ease),
+    transform var(--dur-close) var(--ease),
+    overlay var(--dur-close) allow-discrete,
+    display var(--dur-close) allow-discrete;
 }
 .sheet[open] {
   display: flex;
-  flex-direction: column;
-  animation: sheetIn var(--dur-sheet) var(--ease);
+  opacity: 1;
+  transform: none;
+  transition-duration: var(--dur-sheet);
 }
-.sheet::backdrop {
-  background: var(--paper);
-}
-@keyframes sheetIn {
-  from {
+@starting-style {
+  .sheet[open] {
     opacity: 0;
     transform: translateY(-8px);
+  }
+}
+/* 뒤 페이지에서 시트로 바로 바뀌지 않고 겹쳐 바뀐다 (흰 바탕이 먼저 '팍' 덮이지 않게) */
+.sheet::backdrop {
+  background: var(--paper);
+  opacity: 0;
+  transition:
+    opacity var(--dur-close) var(--ease),
+    overlay var(--dur-close) allow-discrete,
+    display var(--dur-close) allow-discrete;
+}
+.sheet[open]::backdrop {
+  opacity: 1;
+  transition-duration: var(--dur-open);
+}
+@starting-style {
+  .sheet[open]::backdrop {
+    opacity: 0;
   }
 }
 .sheetNav {
@@ -162,6 +334,8 @@
   border-top: 1px solid var(--line);
 }
 .sheetRow {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -169,6 +343,26 @@
   border-bottom: 1px solid var(--line);
   color: var(--ink-900);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* 누르는 동안 줄 뒤에 옅은 면 (괘선 밖으로 12px 넉넉하게, 모서리 둥글게) */
+.sheetRow::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 3px -12px;
+  border-radius: var(--r-control);
+  background: var(--subtle);
+  opacity: 0;
+  transition: opacity var(--dur-hover) var(--ease);
+}
+.sheetRow:active::before {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .sheetRow:hover::before {
+    opacity: 1;
+  }
 }
 .sheetName {
   font: 600 17px/26px var(--font-kr);
@@ -184,21 +378,71 @@
   text-decoration-thickness: 2px;
   text-underline-offset: 5px;
 }
+/* 시트 아래 지원 행동: 폭 가득한 두 번째 버튼 (목록 줄과 같은 이름 · 설명 배치). 모양 규칙은 머리말 버튼과 같다 */
+.applySheet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  margin-top: 24px;
+  padding: 0 18px;
+  border-radius: var(--r-control);
+  background: var(--field);
+  color: var(--ink-900);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-hover) var(--ease),
+    transform var(--dur-press) var(--ease);
+}
+@media (hover: hover) {
+  .applySheet:hover {
+    background: #e6e9ed;
+  }
+}
+.applySheet .applyName {
+  font: 600 17px/26px var(--font-kr);
+}
+.applySub {
+  margin-left: auto;
+  font: var(--t-meta);
+  color: var(--ink-700);
+  text-align: right;
+}
+.applySheet.applyNow .applySub,
+.applySheet.applyActive .applySub {
+  color: var(--band-ink-2);
+}
 .sheetFoot {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 24px;
+  align-items: center;
+  gap: 0 12px;
   margin-top: 24px;
 }
 .sheetFoot :global(.link) {
   min-height: 44px;
 }
+.sheetFootMeta {
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
 
-/* ── 꼬리말 ── */
+/*
+ * ── 꼬리말: 먹색 면 (모든 페이지의 같은 끝) ──
+ * footer 에 .on-dark 를 달아 글자 · 선 · 포커스 링(#8AB4F8) 단계를 먹색 면 값으로 바꿔 끼운다.
+ * 본문(main)이 이야기 섹션(.story, 보통 JoinStrip)으로 끝나면 위 여백 없이 바로 붙는다.
+ * 본문이 참고 섹션 · 글로 끝나는 페이지(/recruits · 오류)는 흰 여백(--gap-section)을 둔다.
+ * 밑줄은 hover 와 지금 페이지만 (목록 전체에 밑줄을 긋지 않는다).
+ */
 .footer {
   margin-top: var(--gap-section);
-  border-top: 1px solid var(--line);
-  padding: 56px 0 calc(32px + env(safe-area-inset-bottom, 0px));
+  padding: 80px 0 calc(40px + env(safe-area-inset-bottom, 0px));
+  background: var(--band-bg);
+  color: var(--band-ink-2);
+}
+:global(main):has(> :global(.story):last-child, > :last-child > :global(.story):last-child) + .footer {
+  margin-top: 0;
 }
 .footerGrid {
   display: grid;
@@ -212,10 +456,13 @@
   flex-direction: column;
   gap: 10px;
 }
-.footerName > span:last-child {
+.footer .wordmark {
+  color: var(--band-ink);
+}
+.footerName > span:nth-child(2) {
   max-width: 17em;
   font: 400 15px/22px var(--font-kr);
-  color: var(--ink-700);
+  color: var(--band-ink-2);
 }
 .footerCol {
   grid-column: span 3;
@@ -223,7 +470,7 @@
 .footerCol h2 {
   margin-bottom: 8px;
   font: var(--t-meta);
-  color: var(--ink-700);
+  color: var(--band-ink-3);
 }
 .footerLink {
   display: inline-flex;
@@ -231,13 +478,101 @@
   gap: 10px;
   min-height: 44px;
   font: 500 15px/22px var(--font-kr);
-  color: var(--ink-900);
-  text-decoration: underline;
+  color: var(--band-ink);
+  text-decoration: none;
   text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-underline-offset: 4px;
 }
-.footerLink:hover {
+/* 한 줄 행동(메일 쓰기): 글자를 한 단계 굵게 */
+.footerAction {
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .footerLink:hover {
+    text-decoration-line: underline;
+  }
+}
+/* 지금 보고 있는 페이지: 메뉴 활성과 같은 2px 밑줄 */
+.footerLink[aria-current='page'] {
+  text-decoration-line: underline;
   text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
+/* 협업 · 연사 제안: 이름 붙은 한 줄. 주소는 고를 수 있는 글자(한 번 누르면 통째로 선택), 메일 앱은 옆 링크 */
+.contactRow {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--band-line);
+}
+.contactRow dt {
+  font: 600 15px/22px var(--font-kr);
+  color: var(--band-ink);
+}
+.contactRow dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 12px;
+}
+.address {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--band-ink);
+  -webkit-user-select: all;
+  user-select: all;
+  cursor: text;
+}
+/*
+ * 둘러보기 목록 옆 '현재 위치' 작은 지도: 안내판의 현재 위치 지도처럼 옅은 판(radius 14) 위에.
+ * 이 페이지 건물만 장소색 (홈은 모두). 목록 첫 줄과 위를 맞춘다.
+ * 칸이 좁으면(1024–1279 · 태블릿) 지도가 너무 작아지므로 목록 아래로 내린다.
+ */
+.footerBrowse {
+  container: browse / inline-size;
+}
+.browseBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.browseBody > ul {
+  flex: none;
+}
+.here {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 200px;
+  margin-top: 6px;
+}
+.miniCampus {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 960 / 580;
+  padding: 4px;
+  border-radius: 14px;
+  background: #f4f6f8;
+  pointer-events: none;
+}
+.hereLabel {
+  font: var(--t-meta);
+  color: var(--band-ink-3);
+}
+@container browse (max-width: 300px) {
+  .browseBody {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .here {
+    width: 100%;
+    max-width: 200px;
+    margin-top: 0;
+  }
 }
 .footerFacts > div {
   display: flex;
@@ -250,7 +585,10 @@
   width: 5.5em;
   flex: none;
   font: var(--t-meta);
-  color: var(--ink-700);
+  color: var(--band-ink-3);
+}
+.footerFacts dd {
+  color: var(--band-ink);
 }
 .footerNotes {
   grid-column: 1 / -1;
@@ -258,9 +596,9 @@
   flex-direction: column;
   gap: 4px;
   padding-top: 24px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--band-line);
   font: 400 14px/22px var(--font-kr);
-  color: var(--ink-700);
+  color: var(--band-ink-3);
 }
 .footerBottom {
   grid-column: 1 / -1;
@@ -270,37 +608,54 @@
   gap: 4px 24px;
   margin-top: -16px;
   font: var(--t-meta);
-  color: var(--ink-700);
+  color: var(--band-ink-3);
 }
 .admin {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   margin-left: auto;
-  color: var(--ink-700);
+  color: var(--band-ink-3);
+  text-decoration: none;
   text-underline-offset: 3px;
 }
-.admin:hover {
-  color: var(--ink-900);
+@media (hover: hover) {
+  .admin:hover {
+    color: var(--band-ink);
+    text-decoration-line: underline;
+  }
 }
 
-@media (max-width: 1023px) {
+/*
+ * 1279 이하: 네 칸이 좁아 '연락'의 주소 · 링크가 두 줄로 꺾이고 ↗ 가 글자에서 떨어진다.
+ * 이름을 맨 위 한 줄로 올리고, 아래 세 칸을 내용 길이에 맞춰 4 · 5 · 3 으로 나눈다.
+ */
+@media (max-width: 1279px) {
   .footerName {
     grid-column: 1 / -1;
   }
   .footerCol {
     grid-column: span 4;
   }
+  .footerContact {
+    grid-column: span 5;
+  }
+  .footerGen {
+    grid-column: span 3;
+  }
 }
 @media (max-width: 767px) {
   .footer {
-    padding-top: 40px;
+    padding-top: 56px;
   }
   .footerGrid {
-    row-gap: 32px;
+    row-gap: 36px;
   }
   .footerCol {
     grid-column: 1 / -1;
+  }
+  .here {
+    max-width: 180px;
   }
   .admin {
     margin-left: 0;
@@ -308,7 +663,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet[open] {
-    animation: none;
+  .sheet,
+  .sheet::backdrop,
+  .navLink::after,
+  .applySheet {
+    transition: none;
+  }
+  .applySheet:active {
+    transform: none;
   }
 }

@@ -40,10 +40,10 @@ function anchorOf(frame: HTMLElement, id: PlaceId): Rect | null {
  */
 const buildingOf = (frame: HTMLElement | null, id: PlaceId) => frame?.querySelector<SVGElement>(`[data-place="${id}"]`) ?? null
 
-/** focus() 를 부를 수 있는 요소: HTML 버튼(범례)과 SVG 건물(<g tabindex>) 둘 다 */
+/** focus() 를 부를 수 있는 요소: HTML 버튼(검색 결과 등)과 SVG 건물(<g tabindex>) 둘 다 */
 const isFocusable = (el: Element | null): el is HTMLElement | SVGElement => el instanceof HTMLElement || el instanceof SVGElement
 
-/** 누르면 미리보기가 열리는 것들(건물 · 이름표 · 범례). 여기를 누르는 건 '바깥 클릭'이 아니다 */
+/** 누르면 미리보기가 열리는 것들(건물 · 광장 깃발 · 이름표). 여기를 누르는 건 '바깥 클릭'이 아니다 */
 export const PLACE_TRIGGER = `[aria-controls="${PLACE_PANEL_ID}"], [data-place-label]`
 
 function Row({ item, today }: { item: PreviewItem; today: string }) {
@@ -86,7 +86,7 @@ interface Props {
 }
 
 /**
- * 장소 미리보기. 사람이 건물 · 범례 · 검색 결과를 눌렀을 때만 열린다 (처음 들어왔을 때는 닫혀 있음).
+ * 장소 미리보기. 사람이 건물 · 이름표 · 검색 결과를 눌렀을 때만 열린다 (처음 들어왔을 때는 닫혀 있음).
  * 데스크톱은 이름표 옆에 뜨고(자리가 없으면 왼쪽 · 아래 · 위로), 폰은 아래에서 올라오는 시트다.
  * 열리면 초점이 제목으로, 닫히면 건물로 돌아간다. Esc · 닫기 버튼 · 바깥 클릭으로 닫는다.
  */
@@ -138,7 +138,7 @@ export function PlacePopover({ frameRef, sheet }: Props) {
     if (!back) return
     const focusInside = !document.activeElement || document.activeElement === document.body || panelRef.current?.contains(document.activeElement)
     if (!focusInside) return
-    // 건물 · 범례에서 열었으면 그 자리로, 검색 등 다른 곳에서 열었으면 지도의 그 건물로
+    // 건물 · 이름표에서 열었으면 그 자리로, 검색 등 다른 곳에서 열었으면 지도의 그 건물로
     const target = isFocusable(back) && back.isConnected && back.closest(PLACE_TRIGGER) ? back : buildingOf(frameRef.current, selected)
     target?.focus({ preventScroll: true })
   }, [open, ready, selected, frameRef])

@@ -1,25 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Generation, Project, ScheduleEvent } from '@/domain/types'
-import {
-  coverRows,
-  dayLabel,
-  eventSpan,
-  generationPeriod,
-  isJointEvent,
-  latestProjects,
-  membersBasis,
-  monthWords,
-  nextEvent,
-  pastJointEvents,
-  pastPublishedCount,
-  projectMeta,
-  projectsWithRepo,
-  pastRecruitLine,
-  sentences,
-  shortDay,
-  sortGenerations,
-  spanLabel,
-} from './homeData'
+import type { Project, ProjectImage, ScheduleEvent } from '@/domain/types'
+import { dayLabel, homeNextEvent, keyParts, nextEvent, projectCounts, projectMeta, shortDay, tileShots } from './homeData'
 
 const ev = (id: string, date: string, kind: ScheduleEvent['kind'], extra: Partial<ScheduleEvent> = {}): ScheduleEvent => ({
   id,
@@ -31,26 +12,13 @@ const ev = (id: string, date: string, kind: ScheduleEvent['kind'], extra: Partia
 })
 
 const TODAY = '2026-10-17'
+const PUBLIC = 'https://gdg.community.dev/events/details/x/'
 
 describe('날짜 표기', () => {
   it("올해는 '10.27 화', 다른 해는 연도를 붙인다", () => {
     expect(dayLabel('2026-10-27', TODAY)).toBe('10.27 화')
     expect(dayLabel('2027-01-30', TODAY)).toBe('2027.01.30 토')
     expect(shortDay('2027-01-30', TODAY)).toBe('2027.01.30')
-  })
-
-  it('기간은 같은 달 · 다른 달 · 다른 해를 나눈다', () => {
-    expect(spanLabel('2026-10-13', '2026-12-29', TODAY)).toBe('10.13–12.29')
-    expect(spanLabel('2027-01-30', '2027-01-31', TODAY)).toBe('2027.01.30–31')
-    expect(spanLabel('2026-11-02', '2027-01-31', TODAY)).toBe('2026.11.02–2027.01.31')
-    expect(spanLabel('2026-10-27', undefined, TODAY)).toBe('10.27')
-  })
-})
-
-describe('문장 나누기', () => {
-  it('마침표 뒤에서 나눈다 (2026–27 같은 숫자는 그대로)', () => {
-    expect(sentences('4기(2026–27)입니다. 전공과 학년에 상관없이 함께합니다.')).toEqual(['4기(2026–27)입니다.', '전공과 학년에 상관없이 함께합니다.'])
-    expect(sentences('')).toEqual([])
   })
 })
 
@@ -68,7 +36,7 @@ describe('다음 일정', () => {
   })
 
   it('조건에 맞는 첫 일정을 고른다', () => {
-    expect(nextEvent(events, TODAY, isJointEvent)?.id).toBe('dhdr')
+    expect(nextEvent(events, TODAY, (e) => e.kind === 'event')?.id).toBe('dhdr')
   })
 
   it('여러 날 행사는 끝나는 날까지 다가오는 일정이다', () => {
@@ -78,119 +46,89 @@ describe('다음 일정', () => {
   it('일정이 없으면 null', () => {
     expect(nextEvent([], TODAY)).toBeNull()
   })
-
-  it('기간은 맞는 일정의 처음과 끝', () => {
-    expect(eventSpan(events, isJointEvent)).toEqual({ start: '2026-11-02', end: '2027-01-31' })
-    expect(eventSpan([], isJointEvent)).toBeNull()
-  })
 })
 
-describe('글자 표지 일정', () => {
-  const all = () => true
-  it('다가오는 일정을 먼저, 모자라면 최근 지난 일정으로 채워 날짜순으로', () => {
-    const list = [ev('a', '2026-09-01', 'session'), ev('b', '2026-09-22', 'session'), ev('c', '2026-10-27', 'session'), ev('d', '2026-12-01', 'session'), ev('r', '2026-10-20', 'rest')]
-    expect(coverRows(list, TODAY, all, 3).map((e) => e.id)).toEqual(['b', 'c', 'd'])
-  })
-  it('일정이 많아도 n개', () => {
-    const many = Array.from({ length: 64 }, (_, i) => ev(`e${i}`, `2026-${String((i % 12) + 1).padStart(2, '0')}-10`, 'session'))
-    expect(coverRows(many, TODAY, all, 4)).toHaveLength(4)
-    expect(coverRows([], TODAY, all, 4)).toEqual([])
-  })
-})
+describe('홈 다음 일정 (공개됐거나 확정된 것만)', () => {
+  const plan = '4기 운영 계획'
+  const events = [
+    ev('rest', '2026-10-20', 'rest', { source: plan }),
+    ev('mid', '2026-10-27', 'sprint', { source: plan }),
+    ev('dhdr', '2026-11-02', 'event', { source: plan }),
+    ev('open', '2026-11-10', 'event', { source: PUBLIC, url: PUBLIC }),
+  ]
 
-describe('연합 행사 · 지난 행사 수', () => {
-  it('MT 같은 일반 행사는 연합 행사가 아니다', () => {
-    expect(isJointEvent(ev('mt', '2026-12-15', 'event', { title: 'MT' }))).toBe(false)
-    expect(isJointEvent(ev('ics', '2024-05-01', 'event', { title: '연합 세션', originalTitle: 'Inter-Chapter Session' }))).toBe(true)
-    expect(isJointEvent(ev('s', '2024-05-01', 'session', { title: '동홍동락 준비' }))).toBe(false)
+  it('확정된 G-Sprint 날짜는 공개 페이지가 없어도 올린다', () => {
+    expect(homeNextEvent(events, TODAY, ['2026-10-27'])?.id).toBe('mid')
   })
 
-  it("합동 세미나는 연합 행사, 우리끼리 여는 '컨퍼런스'는 아니다", () => {
-    expect(isJointEvent(ev('hs', '2024-11-07', 'event', { title: '홍익대 합동 세미나' }))).toBe(true)
-    expect(isJointEvent(ev('dc', '2025-11-06', 'event', { title: '동국대 Dev Conference 2025', originalTitle: 'Dongguk University Dev Conference 2025' }))).toBe(false)
+  it('운영 계획에만 있는 일정은 건너뛰고 공개된 일정으로', () => {
+    expect(homeNextEvent(events, TODAY, [])?.id).toBe('open')
+    expect(homeNextEvent(events, '2026-10-28', ['2026-10-27'])?.id).toBe('open')
   })
 
-  it('끝난 연합 행사를 최근 것부터', () => {
-    const list = [
-      ev('a', '2024-05-01', 'event', { title: '홍익대 합동 세미나' }),
-      ev('b', '2025-03-01', 'event', { title: 'Inter-Chapter Session' }),
-      ev('c', '2026-11-02', 'event', { title: '동홍동락 1차' }),
-    ]
-    expect(pastJointEvents(list, TODAY).map((e) => e.id)).toEqual(['b', 'a'])
+  it('날짜가 지난 계획은 확정 목록에 있어도 올리지 않는다', () => {
+    const stale = [ev('old', '2026-10-01', 'sprint', { source: plan, endDate: '2026-10-02' })]
+    expect(homeNextEvent(stale, TODAY, ['2026-10-01'])).toBeNull()
   })
 
-  it('gdg.community.dev 출처의 지난 행사만 센다', () => {
-    const src = 'https://gdg.community.dev/gdg-on-campus-dongguk-university-seoul-south-korea/'
-    const list = [
-      ev('a', '2026-09-15', 'recruit', { source: src }),
-      ev('b', '2026-10-13', 'sprint', { source: src }),
-      ev('c', '2026-10-27', 'sprint', { source: '4기 운영 계획' }),
-      ev('d', '2026-12-01', 'session', { source: src }),
-      ev('e', '2026-10-06', 'rest', { source: src }),
-    ]
-    expect(pastPublishedCount(list, TODAY)).toBe(2)
-    expect(pastPublishedCount([], TODAY)).toBe(0)
+  it('올릴 일정이 없으면 null (섹션을 숨긴다)', () => {
+    expect(homeNextEvent([], TODAY, [])).toBeNull()
+    expect(homeNextEvent([events[2]], TODAY, [])).toBeNull()
   })
 })
 
 describe('프로젝트', () => {
-  const p = (id: string, year: number, extra: Partial<Project> = {}): Project => ({ id, name: id, program: 'G-Sprint', year, status: 'done', ...extra })
-
-  it('최근 것부터, 진행 중은 빼고, 개수를 자른다', () => {
-    const list = [p('a', 2023), p('b', 2025, { generation: 3 }), p('c', 2025, { generation: 2 }), p('d', 2026, { status: 'in-progress' })]
-    expect(latestProjects(list, 2).map((x) => x.id)).toEqual(['b', 'c'])
-    expect(latestProjects(Array.from({ length: 24 }, (_, i) => p(`x${i}`, 2020 + (i % 5))), 6)).toHaveLength(6)
-  })
-
-  it('한 줄 설명이 있는 것을 먼저 고른다 (고른 뒤에는 최근 순)', () => {
-    const list = [p('new', 2026), p('old', 2024, { summary: '설명' }), p('mid', 2025, { summary: '설명' })]
-    expect(latestProjects(list, 2).map((x) => x.id)).toEqual(['mid', 'old'])
-    expect(latestProjects(list, 3).map((x) => x.id)).toEqual(['new', 'mid', 'old'])
-  })
-
-  it('저장소가 있는 것만 센다', () => {
-    expect(projectsWithRepo([p('a', 2024, { repo: 'https://github.com/GDSC-DGU/a' }), p('b', 2024)])).toBe(1)
-  })
-
   it('프로그램 이름에 해가 있으면 해를 두 번 쓰지 않는다', () => {
     expect(projectMeta({ program: 'Solution Challenge 2024', year: 2024, generation: 2 })).toBe('Solution Challenge 2024 · 2기')
-    expect(projectMeta({ program: 'G-Sprint', year: 2026 })).toBe('G-Sprint · 2026')
+    expect(projectMeta({ program: 'G-Sprint', year: 2026 } as Pick<Project, 'program' | 'year' | 'generation'>)).toBe('G-Sprint · 2026')
   })
 })
 
-describe('연혁', () => {
-  const g = (n: number, start?: string, end?: string): Generation => ({ n, name: 'GDSC DGU', start, end, summary: '', highlights: [], source: [] })
+describe('프로젝트 주장 제목의 숫자', () => {
+  const p = (program: string, status: Project['status'] = 'done') => ({ program, status })
 
-  it('기간과 순서', () => {
-    expect(generationPeriod(g(1, '2022-09', '2023-08'))).toBe('2022.09–2023.08')
-    expect(generationPeriod(g(4, '2026-09'))).toBe('2026.09–')
-    expect(generationPeriod({ end: '2023-06' })).toBe('–2023.06')
-    expect(generationPeriod({})).toBe('')
-    expect(sortGenerations([g(3, '2024-09'), g(1, '2022-09')]).map((x) => x.n)).toEqual([1, 3])
+  it('완성된 것만 세고, 그중 Solution Challenge 에서 만든 수를 따로 센다', () => {
+    const list = [p('Solution Challenge 2026'), p('Solution Challenge 2025 APAC'), p('챕터 웹사이트'), p('G-Sprint', 'in-progress'), p('동국대 봄 축제')]
+    expect(projectCounts(list)).toEqual({ done: 4, solutionChallenge: 2 })
   })
 
-  it('멤버 수의 기준', () => {
-    expect(membersBasis('2026-10-16')).toBe('gdg.community.dev 기준 2026.10')
+  it('목록이 비어 있으면 0', () => {
+    expect(projectCounts([])).toEqual({ done: 0, solutionChallenge: 0 })
   })
 })
 
-describe('지난 모집 한 줄', () => {
-  it('초 · 말 · 달만', () => {
-    expect(monthWords('2026-09-03', '2026-09-10')).toBe('9월 초')
-    expect(monthWords('2026-08-18', '2026-08-31')).toBe('8월')
-    expect(monthWords('2026-08-21', '2026-08-31')).toBe('8월 말')
-    expect(monthWords('2026-08-25', '2026-09-05')).toBe('8–9월')
+describe('큰 타일 그림 고르기', () => {
+  const img = (src: string, kind: ProjectImage['kind'], caption?: string): ProjectImage => ({ src, alt: src, kind, caption, width: 1, height: 1, source: 'https://github.com/GDSC-DGU/x', teamCleared: false })
+
+  it('실제 화면 + 같은 화면의 폰 화면을 겹친다', () => {
+    const g = [img('d-home', 'screen', '홈 (데스크톱)'), img('m-onboard', 'mobile', '온보딩 (모바일)'), img('m-home', 'mobile', '홈 (모바일)')]
+    expect(tileShots(g)).toEqual({ wide: g[0], phone: g[2] })
   })
 
-  it('기간이 있는 단계만 쓰고, 없으면 null', () => {
-    const steps = [
-      { label: '코어 멤버 모집', start: '2026-08-18', end: '2026-08-31' },
-      { label: '일반 멤버 모집', start: '2026-09-03', end: '2026-09-10' },
-      { label: '4기 OT', start: '2026-09-15' },
-    ]
-    expect(pastRecruitLine(4, steps)).toBe('지난 4기는 8월에 코어 멤버, 9월 초에 일반 멤버를 모집했습니다.')
-    const withMarketing = [steps[0], { label: '마케팅 코어 모집', start: '2026-09-02', end: '2026-09-09' }, steps[1], steps[2]]
-    expect(pastRecruitLine(4, withMarketing)).toBe('지난 4기는 8월에 코어 멤버, 9월 초에 마케팅 코어 · 일반 멤버를 모집했습니다.')
-    expect(pastRecruitLine(4, [{ label: '4기 OT', start: '2026-09-15' }])).toBeNull()
+  it('같은 화면이 없으면 첫 폰 화면', () => {
+    const g = [img('d-search', 'screen', '검색 (데스크톱)'), img('m-a', 'mobile', '온보딩 (모바일)')]
+    expect(tileShots(g).phone?.src).toBe('m-a')
+  })
+
+  it('소개 그림에는 폰 화면을 겹치지 않고, 로고 · 구조도는 큰 타일에 걸지 않는다', () => {
+    expect(tileShots([img('promo', 'promo'), img('m', 'mobile')])).toEqual({ wide: img('promo', 'promo') })
+    expect(tileShots([img('logo', 'logo'), img('arch', 'diagram')])).toEqual({ wide: undefined })
+  })
+})
+
+describe('큰 숫자 조각', () => {
+  it("숫자와 단위를 나눈다: '5팀 27명' → 5 · 팀 · 27 · 명", () => {
+    expect(keyParts('5팀 27명')).toEqual([
+      { text: '5', num: true },
+      { text: '팀', num: false },
+      { text: '27', num: true },
+      { text: '명', num: false },
+    ])
+    expect(keyParts('18:00')).toEqual([{ text: '18:00', num: true }])
+    expect(keyParts('4개 챕터')).toEqual([
+      { text: '4', num: true },
+      { text: '개 챕터', num: false },
+    ])
+    expect(keyParts('12.29 데모데이').map((x) => x.text)).toEqual(['12.29', '데모데이'])
   })
 })

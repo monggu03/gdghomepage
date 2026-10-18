@@ -9,7 +9,7 @@
 - 직접 열어 본 공개 페이지에 있는 사실만 씁니다. 기억이나 '아마 그랬을 것'은 넣지 않습니다. 확인이 안 되면 빼 둡니다.
 - 숫자에는 기준을 붙입니다 (`gdg.community.dev 기준 2026.10`).
 - 모르면 비워 둡니다. 화면은 빈 칸을 숨기도록 만들어져 있습니다.
-- 지어낸 예시 글(모집 글 · 후기 등)은 넣지 않습니다. 아직 열지 않은 게시판은 날짜 없는 상태 줄(`TEAMS_STATUS`)로 보여 줍니다.
+- 지어낸 예시 글(모집 글 · 후기 등)은 넣지 않습니다. 아직 열지 않은 게시판(팀원 찾기)은 예시 글 대신 '열리면 생길 것' 세 줄로 보여 줍니다 (`src/features/common/joinData.ts` 의 `TEAMS_WILL_HAVE`).
 
 ## 1-1. 문구 쓰는 법 (content.test.ts 가 검사)
 
@@ -26,7 +26,7 @@
 | `projects.json` | 프로젝트 목록 | 데모데이 뒤, GitHub 저장소가 생겼을 때 |
 | `generations.json` | 기수 연혁 (1기 ~ 지금) | 기수가 바뀔 때 |
 | `faq.json` | 자주 묻는 질문 | 모집 전 |
-| `recruiting.json` | 지금 모집 상태 · 지난 모집 기록 | 모집 공지를 올릴 때 |
+| `recruiting.json` | 다음 모집 날짜 · 지원서 주소 · 지난 모집 기록 | 모집 공지를 올릴 때 (날짜 세 칸) |
 | `chapter.json` | 멤버 수, 오거나이저, 이메일, G-Sprint 숫자 | 학기마다 |
 
 파일마다 맨 위에 `updatedAt` 이 있습니다. 고친 날짜(YYYY-MM-DD)로 바꿔 주세요. `events.json` 의 날짜는 사이트 아래쪽 '갱신' 표시에도 쓰입니다.
@@ -83,6 +83,25 @@
 | `status` | `done` 또는 `in-progress` |
 | `source` | 확인한 저장소 주소 (또는 `4기 G-Sprint`) |
 
+GitHub 숫자와 그림 (모두 선택. 없으면 화면이 알아서 줄입니다)
+
+| 필드 | 뜻 |
+|---|---|
+| `contributors` · `commits` | 대표 저장소(`repo`)의 기여자 수 · 커밋 수 |
+| `firstCommit` · `lastCommit` | 대표 저장소의 첫 · 마지막 커밋 날짜 `YYYY-MM-DD` (표지의 기간) |
+| `languages` | GitHub 언어 비율 `[{ "name": "Dart", "share": 90.5 }]` (표지 아래 막대) |
+| `statsAsOf` | 위 숫자를 확인한 날 |
+| `demo` | README 에 걸린 시연 영상 주소 |
+| `cover` | 표지 그림 한 장. 없으면 이름 · 기간 · 언어 비율로 '글자 표지'를 그립니다 |
+| `images` | 자세히 보기 창에 더 보여 줄 그림 (화면 캡처 · 구조도) |
+
+그림 한 장(`cover` · `images` 의 한 줄)은 `{ src, alt, caption?, kind, width, height, source, teamCleared }` 입니다.
+
+- 파일은 **팀 저장소(GDSC-DGU 조직)에 있는 그림만** 줄여서(가로 960px 이하, webp) `public/project-images/` 에 둡니다. `src` 는 앞에 `/` 없이 `project-images/이름.webp`.
+- `source` 는 원본 그림의 GitHub 주소. 바깥 서버(S3, 스토어 등)에 있는 그림, 사람 얼굴 · 이메일이 보이는 그림은 넣지 않습니다.
+- `kind`: `screen`(화면) · `mobile`(폰 화면) · `promo`(팀 소개 이미지) · `diagram`(구조도 · ERD) · `logo`.
+- `teamCleared`: 팀이 게시를 확인했는지. 지금은 모두 `false` 지만 화면에는 보입니다 (`src/features/pages/projects/exhibit.ts` 의 `SHOW_UNCLEARED_IMAGES = true`). 확인된 그림만 보이게 하려면 이 값을 `false` 로 바꿉니다.
+
 끝난 프로젝트는 `repo` 나 `url` 중 하나가 꼭 있어야 합니다. 진행 중인 프로젝트는 공개 주소가 없으면 비워 둡니다 (예: 개인 저장소에서 만드는 홈페이지 리뉴얼).
 빈 저장소(README · 파일 없음)는 넣지 않습니다.
 
@@ -125,11 +144,57 @@
 ### faq.json
 
 `id`, `q`(물음표로 끝남), `a`(짧은 ~습니다체, `니다.` 로 끝남), `source`. 5~7개가 알맞습니다.
+`id` 는 바꾸지 않습니다. 홈 · 다른 페이지가 `/recruits#faq-who` 처럼 질문 하나를 바로 가리킵니다 (그 질문이 든 탭이 열리고 답이 펼쳐집니다).
 지원 자격 · 정기 모임 시간은 Linktree 의 4기 일반 멤버 지원서(`https://forms.gle/LmwqYrdkyrtuvAmX6`, 마감 뒤에도 안내문이 열림) 기준입니다. 시험 기간 휴회는 4기 운영 계획 기준입니다.
 
 ### recruiting.json
 
+**5기 모집이 정해지면: `opensAt` · `deadline` · `applyUrl` 세 칸만 채우면 홈 · 머리말 · 지원 안내가 같이 바뀝니다.**
+모집 상태는 손으로 바꾸지 않습니다. 날짜를 보고 화면이 알아서 정합니다 (`src/content/recruitingStatus.ts` 의 `recruitStatus(today)`).
+
+```json
+"current": {
+  "generation": 5,
+  "opensAt": "2027-08-20",
+  "deadline": "2027-09-05",
+  "applyUrl": "https://forms.gle/…",
+  "channel": "https://www.instagram.com/gdg.donggukuniv/"
+}
+```
+
+| 필드 | 뜻 | 비워 두면 |
+|---|---|---|
+| `generation` | 모집하는 기수 | (꼭 적음) |
+| `opensAt` | 지원서를 받기 시작하는 날 `YYYY-MM-DD` (한국 날짜, 그날부터 '모집 중') | 일정 미정 |
+| `deadline` | 마지막 날 `YYYY-MM-DD` (그날 밤까지 '모집 중', 다음 날부터 '마감') | 마감 없이 계속 '모집 중' |
+| `applyUrl` | 지원서 주소 (`https://`). 모집 중일 때 주 버튼 '지원서 쓰기' 가 이 주소로 갑니다 | 주 버튼은 '5기 소식 받기'(인스타그램), 리드에 '지원 방법은 모집 공지에' |
+| `channel` | 소식 채널 (인스타그램). '5기 소식 받기' 버튼 · 폰 메뉴가 이 주소로 갑니다 | (꼭 적음) |
+
+비운 칸은 `null` 로 둡니다. 날짜에 따라 화면은 네 가지로 바뀝니다.
+
+| 상태 | 언제 | 지원 안내 머리 | 주 버튼 |
+|---|---|---|---|
+| 일정 미정 | `opensAt` · `deadline` 모두 비어 있음 | 5기 모집은 아직 열리지 않았습니다 + 지난 4기 모집 시기 | 5기 소식 받기 |
+| 곧 열림 | 오늘 < `opensAt` | 5기 모집은 08.20에 열립니다 + D-n | 5기 소식 받기 |
+| 모집 중 | `opensAt` ≤ 오늘 ≤ `deadline` | 5기 모집 중 · 09.05 마감 + D-n | 지원서 쓰기 (`applyUrl`) |
+| 마감 | 오늘 > `deadline` | 5기 모집이 마감됐습니다 | 5기 소식 받기 |
+
+- 날짜 모양이 틀리면(없는 날, `deadline` 이 `opensAt` 보다 앞) 그 칸은 없는 것으로 보고, `npm test` 가 `recruitingProblems` 로 알려 줍니다.
+- `status` · `message` 는 예전 필드입니다. 아직 읽는 곳(지도 미리보기 문장 · 건물 장면의 문 기본값 · 스냅샷 데이터)이 있어 남겨 두었고, 날짜 세 칸이 우선입니다. 모집을 열 때는 `status` 도 `open` 으로 바꿔 두면 안전합니다.
+- 모집을 열 때 `faq.json` 의 `when-recruit` · `how-to-apply` 답도 5기 내용으로 고쳐 주세요 (답은 날짜로 바뀌지 않습니다).
+- 모집과 OT가 끝나면: `current` 의 날짜 세 칸을 `history` 의 새 기수 단계로 옮기고, `generation` 을 하나 올린 뒤 세 칸을 `null` 로 비웁니다.
+
 `history[].steps` 는 시작한 날 순서로 씁니다. 한 단계: `id`, `label`(한글, 예: `마케팅 코어 모집`), `start`, `end`(여러 날이면), `source`, `note`(선택, 예: `면접 2026.09.11 · 최종 발표 2026.09.12`).
+가장 최근 기수의 단계(OT 제외)가 '지난 4기는 2026.08–09에 모집했습니다' 의 기간이 됩니다.
+
+### 계획 일정이 지나면
+
+`events.json` 의 `4기 운영 계획` 일정(공개 행사 페이지 없음)은 날짜가 지나도 공개 페이지가 생기지 않으면 **화면에서 빠집니다** (`src/content/plan.ts` 의 `isStalePlan`).
+열렸는지 확인되지 않은 일정을 '지난 일정' 이나 '계획' 으로 남기지 않기 위해서입니다. 실제로 열렸다면 공개 페이지 주소를 `url` · `source` 에 적어 주세요 (`sync-events` 가 같은 날 · 같은 장소면 자동으로 합칩니다).
+
+### 출처를 화면에 보이는 곳
+
+출처는 JSON 의 줄마다 적지만, 커뮤니티 · 지원 안내 화면에서는 줄마다 보이지 않고 **페이지 맨 끝 '출처' 한 줄**에 사이트별로 모여 보입니다 (`gdg.community.dev ↗ · 4기 운영 계획 · …`).
 
 ## 3. 확인하기
 

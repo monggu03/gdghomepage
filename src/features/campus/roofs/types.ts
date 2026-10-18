@@ -12,6 +12,8 @@ export interface RoofProps {
   doorCenter: number
   /** 지금 진행 중인 장소 (예: G-Sprint 기간의 프로젝트 랩 → 톱니창에 불이 켜짐) */
   live: boolean
+  /** 꺼진 창 유리 색 (생략하면 GLASS). 하위 페이지 장면에서 '문 닫음' 같은 상태를 그릴 때만 바꾼다 */
+  glass?: { readonly L: string; readonly R: string }
 }
 
 /**

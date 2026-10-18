@@ -1,10 +1,14 @@
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { PAGE_PLANS, type PagePlan, type PagePlanId } from '@/config/pages'
 import { NAV_ORDER, PLACE_BY_ID, navLabel, placeColor } from '@/config/places'
 import { SHOW_PLAN, SITE } from '@/config/site'
 import { CONTENT_UPDATED_AT } from '@/content'
 import type { PlaceId } from '@/domain/types'
+import { JoinStrip, TEAMS_WILL_HAVE } from '@/features/common'
+import { PlaceHero } from '@/features/placehero/PlaceHero'
 import { useToday } from '@/hooks/useToday'
+import { DetourLink } from './community/Signage'
 import { dateLabel } from './format'
 import { ExternalLink, Mark, PageHead, Section } from './PageParts'
 import s from './pages.module.css'
@@ -17,7 +21,7 @@ const OPEN_PAGES: Partial<Record<PlaceId, string>> = {
   recruits: '모집 소식 · 지난 모집 기록 · 연락처',
 }
 
-/** 지금 볼 수 있는 페이지로 가는 줄 목록 (준비 중 · 찾을 수 없음 페이지 공통). 사이트 안 이동이라 화살표는 없다 */
+/** 지금 볼 수 있는 페이지로 가는 줄 목록 (찾을 수 없음 페이지). 사이트 안 이동이라 화살표는 없다 */
 function Destinations() {
   const ids = NAV_ORDER.filter((id) => OPEN_PAGES[id])
   return (
@@ -64,51 +68,109 @@ function PlanNotes({ id, plan }: { id: PagePlanId; plan: PagePlan }) {
 }
 
 /**
+ * 준비 중 페이지 머리의 리드 (config/pages.ts 의 lead 대신).
+ * 팀원 찾기는 이름 때문에 동아리 모집 페이지로 오는 사람이 있어서(2026-10 점검), 동아리 멤버를 뽑는 곳이 아니라는 말과
+ * 지원 안내로 가는 길을 첫 화면에 둔다.
+ */
+const LEADS: Partial<Record<PagePlanId, ReactNode>> = {
+  teams: (
+    <>
+      GDGoC DGU 멤버끼리 스터디 · 프로젝트 · 공모전을 같이할 팀원을 찾는 게시판입니다. 동아리 멤버를 뽑는 곳은 아닙니다.
+      <DetourLink to={PLACE_BY_ID.recruits.path} place="recruits">
+        동아리 지원은 지원 안내에서
+      </DetourLink>
+    </>
+  ),
+}
+
+/** 준비 중 페이지 '지금 상태': 지금 상태 · 여는 시기 · 먼저 알릴 곳 (DESIGN 10장 '미정인 것은 세 가지') */
+function StatusFacts({ what }: { what?: ReactNode }) {
+  return (
+    <dl className={s.facts}>
+      {what && (
+        <div>
+          <dt>생길 것</dt>
+          <dd>{what}</dd>
+        </div>
+      )}
+      <div>
+        <dt>지금 상태</dt>
+        <dd>준비하고 있습니다.</dd>
+      </div>
+      <div>
+        <dt>여는 시기</dt>
+        <dd>아직 정하지 않았습니다.</dd>
+      </div>
+      <div>
+        <dt>먼저 알리는 곳</dt>
+        <dd>
+          열리면{' '}
+          <ExternalLink href={SITE.links.instagram} className={s.inlineLink}>
+            인스타그램 {SITE.links.instagramHandle}
+          </ExternalLink>
+          에 가장 먼저 알립니다.
+        </dd>
+      </div>
+    </dl>
+  )
+}
+
+/**
  * 아직 열지 않은 페이지 (/teams, /admin).
- * 무엇이 될지(리드) · 지금 상태(준비 중) · 여는 시기(미정) · 먼저 알릴 곳 · 지금 볼 수 있는 곳만 적는다 (DESIGN 10장).
+ * 무엇이 될지 · 지금 상태 · 여는 시기(미정) · 먼저 알릴 곳만 적는다 (DESIGN 10장).
+ * 지도에 건물이 있는 장소(팀원 찾기)는 짧게: 공사 중인 건물 머리 → JoinStrip 변형 하나('팀원 찾기는 준비하고 있습니다'
+ * + 소식 받기 · 지원 안내 보기 | 열리면 생길 것 세 줄) → 꼬리말. 지금 상태 · 여는 시기 · 먼저 알릴 곳은 JoinStrip 한 줄이 말한다.
  */
 export function PlannedPage({ id }: { id: PagePlanId }) {
   const today = useToday()
   const plan: PagePlan = PAGE_PLANS[id]
-  const color = plan.place ? placeColor(plan.place) : 'var(--ink-900)'
+  const place = 'place' in plan ? plan.place : undefined
+  const meta = (
+    <>
+      <span className={s.statusTag}>준비 중</span> <span className="num">{dateLabel(CONTENT_UPDATED_AT, null, today)}</span> 기준
+    </>
+  )
+
+  if (!place) {
+    // 운영진 화면(/admin): 방문자용 페이지가 아니므로 최소한만
+    return (
+      <div className={`container ${s.page}`}>
+        <PageHead mark="var(--ink-900)" eyebrow={plan.sub} title={plan.title} lead={plan.lead} meta={meta} />
+        <Section id="status" title="지금 상태">
+          <StatusFacts />
+          <p className={s.backHome}>
+            <Link className="link" to="/">
+              홈으로 가기
+            </Link>
+          </p>
+        </Section>
+        {SHOW_PLAN && <PlanNotes id={id} plan={plan} />}
+      </div>
+    )
+  }
+
   return (
     <div className={`container ${s.page}`}>
-      <PageHead
-        mark={color}
-        eyebrow={plan.sub}
-        title={plan.title}
-        lead={plan.lead}
-        meta={
-          <>
-            <span className={s.statusTag}>준비 중</span> <span className="num">{dateLabel(CONTENT_UPDATED_AT, null, today)}</span> 기준
-          </>
-        }
+      {/* 이름 · 부제는 지도 장소(config/places.ts)와 같게: 메뉴 · 지도 이름표 · 이 페이지가 한 이름을 쓴다 */}
+      <PlaceHero
+        place={place}
+        state="construction"
+        eyebrow={PLACE_BY_ID[place].sub}
+        title={PLACE_BY_ID[place].label}
+        lead={LEADS[id] ?? plan.lead}
+        meta={meta}
+        directory={[
+          { label: '지금 상태', value: '준비 중', href: '#join' },
+          { label: '여는 시기', value: '미정', href: '#join' },
+          ...(id === 'teams' ? [{ label: '열리면 생길 것', value: <><span className="num">{TEAMS_WILL_HAVE.length}</span>가지</>, href: '#join' }] : []),
+          { label: '동아리 지원', value: PLACE_BY_ID.recruits.label, href: PLACE_BY_ID.recruits.path },
+        ]}
       />
 
-      <Section id="status" title="지금 상태">
-        <dl className={s.facts}>
-          <div>
-            <dt>여는 시기</dt>
-            <dd>아직 정하지 않았습니다.</dd>
-          </div>
-          <div>
-            <dt>먼저 알리는 곳</dt>
-            <dd>
-              열리면{' '}
-              <ExternalLink href={SITE.links.instagram} className={s.inlineLink}>
-                인스타그램 {SITE.links.instagramHandle}
-              </ExternalLink>
-              에 가장 먼저 알립니다.
-            </dd>
-          </div>
-        </dl>
-      </Section>
-
-      <Section id="elsewhere" title="지금 볼 수 있는 곳" quiet>
-        <Destinations />
-      </Section>
-
+      {/* 개발 화면에서만: 팀 기획 메모 (JoinStrip 뒤에 두면 꼬리말 위에 흰 여백이 생겨 앞에 둔다) */}
       {SHOW_PLAN && <PlanNotes id={id} plan={plan} />}
+
+      <JoinStrip variant={id === 'teams' ? 'teams' : 'default'} />
     </div>
   )
 }

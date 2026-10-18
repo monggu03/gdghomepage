@@ -3,26 +3,28 @@ import { KIND_LABEL } from '@/config/kinds'
 import { placeColor } from '@/config/places'
 import type { ScheduleEvent } from '@/domain/types'
 import { dateLabel } from './format'
+import { mainVenue, mainWeekday, type SeriesRun } from './community/archive'
+import { RoomPlate } from './community/Signage'
 import { Mark } from './PageParts'
 import s from './pages.module.css'
 
 /** 날짜 칸. 기간이면 '–' 뒤에서만 줄을 바꾼다 ('08.18 화–' / '08.31 월') */
-function RowDate({ e, today }: { e: ScheduleEvent; today: string }) {
-  const [from, to] = dateLabel(e.date, e.endDate, today).split('–')
+function RowDate({ from: start, to: end, today }: { from: string; to?: string; today: string }) {
+  const [from, to] = dateLabel(start, end && end !== start ? end : null, today).split('–')
   return (
     <span className={`${s.rowDate} num`}>
-      {to && e.endDate ? (
+      {to && end ? (
         <>
-          <time className={s.nowrap} dateTime={e.date}>
+          <time className={s.nowrap} dateTime={start}>
             {from}–
           </time>
           <wbr />
-          <time className={s.nowrap} dateTime={e.endDate}>
+          <time className={s.nowrap} dateTime={end}>
             {to}
           </time>
         </>
       ) : (
-        <time className={s.nowrap} dateTime={e.date}>
+        <time className={s.nowrap} dateTime={start}>
           {from}
         </time>
       )}
@@ -31,19 +33,24 @@ function RowDate({ e, today }: { e: ScheduleEvent; today: string }) {
 }
 
 /**
- * 일정 · 행사 한 줄: 날짜 / 제목 + 연속 행사 · 장소 / 종류 / 끝 칸(D-day 같은 짧은 말 · ↗).
+ * 일정 · 행사 한 줄: 날짜 / 제목 + 연속 행사 · 호실 이름표 / 종류 / 끝 칸(D-day 같은 짧은 말 · ↗).
  * 원래 행사 페이지가 있으면 줄 전체가 그 페이지로 가는 링크이고, 끝에 작은 ↗ 하나를 둔다.
+ * size='lg': 대표 행사(연합 행사 · 컨퍼런스 · 데모데이)는 이름을 크게. title: 이름 자리를 바꿔 그릴 때 (용어 풀이)
  */
-export function EventRow({ e, today, note }: { e: ScheduleEvent; today: string; note?: ReactNode }) {
+export function EventRow({ e, today, note, size, title }: { e: ScheduleEvent; today: string; note?: ReactNode; size?: 'lg'; title?: ReactNode }) {
   // 제목에 이미 연속 행사 이름이 들어 있으면 한 번만 쓴다
   const series = e.series && !e.title.includes(e.series) ? e.series : null
-  const sub = [series, e.venue].filter(Boolean).join(' · ')
   const body = (
     <>
-      <RowDate e={e} today={today} />
+      <RowDate from={e.date} to={e.endDate} today={today} />
       <span className={s.rowMain}>
-        <span className={s.rowTitle}>{e.title}</span>
-        {sub && <span className={s.rowSub}>{sub}</span>}
+        <span className={s.rowTitle}>{title ?? e.title}</span>
+        {(series || e.venue) && (
+          <span className={s.rowSub}>
+            {series}
+            {e.venue && <RoomPlate venue={e.venue} prefix="장소" />}
+          </span>
+        )}
       </span>
       <span className={s.rowKind}>
         <Mark color={placeColor(e.place)} />
@@ -60,7 +67,7 @@ export function EventRow({ e, today, note }: { e: ScheduleEvent; today: string; 
     </>
   )
   return (
-    <li>
+    <li data-size={size}>
       {e.url ? (
         <a className={`${s.row} ${s.rowLink}`} href={e.url} target="_blank" rel="noreferrer">
           {body}
@@ -74,27 +81,33 @@ export function EventRow({ e, today, note }: { e: ScheduleEvent; today: string; 
 }
 
 /**
- * 일정 · 행사 목록. note 는 줄마다 끝 칸에 붙일 짧은 말 (다가오는 일정의 'D-10').
- * note 가 없으면 끝 칸을 ↗ 하나만큼 좁힌다.
+ * 연속 세션 한 줄 (Camping Seminar 14회 같은 것): 기간 / 이름 + 회차 수 · 주로 연 요일 · 주로 쓴 호실 / 종류.
+ * 회차마다 줄을 늘어놓지 않는다. 회차별 행사 페이지는 gdg.community.dev 에 있다 (페이지 끝 출처 줄).
  */
-export function EventRows({
-  events,
-  today,
-  note,
-  id,
-  label,
-}: {
-  events: readonly ScheduleEvent[]
-  today: string
-  note?: (e: ScheduleEvent, index: number) => ReactNode
-  id?: string
-  label?: string
-}) {
+export function SeriesRow({ run, today, title }: { run: SeriesRun; today: string; title?: ReactNode }) {
+  const first = run.events[0]
+  const last = run.events[run.events.length - 1]
+  const wd = mainWeekday(run.events)
+  const venue = mainVenue(run.events)
   return (
-    <ul className={`${s.rows} ${note ? '' : s.rowsCompact}`} id={id} aria-label={label}>
-      {events.map((e, i) => (
-        <EventRow key={e.id} e={e} today={today} note={note?.(e, i)} />
-      ))}
-    </ul>
+    <li>
+      <div className={s.row}>
+        <RowDate from={first.date} to={last.date} today={today} />
+        <span className={s.rowMain}>
+          <span className={s.rowTitle}>{title ?? run.series}</span>
+          <span className={s.rowSub}>
+            <span>
+              <span className="num">{run.events.length}</span>회{wd && ` · 주로 ${wd}요일`}
+            </span>
+            {venue && <RoomPlate venue={venue} prefix="주로 쓴 장소" />}
+          </span>
+        </span>
+        <span className={s.rowKind}>
+          <Mark color={placeColor(first.place)} />
+          {KIND_LABEL[first.kind]}
+        </span>
+        <span className={s.rowEnd} />
+      </div>
+    </li>
   )
 }

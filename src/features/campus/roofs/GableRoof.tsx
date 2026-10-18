@@ -14,7 +14,7 @@ const THICK = 0.07
  * 박공지붕 집 + 둥근 창 + 문 위 차양: 처음 오는 사람을 맞는 안내소 느낌.
  * 빛이 왼쪽 위에서 오므로 왼쪽 지붕면이 밝고 오른쪽 지붕면이 어둡다.
  */
-export function GableRoof({ fp, color, top, doorCenter }: RoofProps) {
+export function GableRoof({ fp, color, top, doorCenter, glass = GLASS }: RoofProps) {
   const { x, y, w, d } = fp
   const xc = x + w / 2
   const o = EAVE
@@ -28,7 +28,7 @@ export function GableRoof({ fp, color, top, doorCenter }: RoofProps) {
     <>
       {/* 앞 박공 벽 (중립색) + 둥근 창 */}
       <Poly className={`${s.wallL} ${s.edge}`} pts={[[x, y + d, top], [x + w, y + d, top], [xc, y + d, top + RISE]]} />
-      <Poly pts={ring} fill={GLASS.L} className={s.edge} />
+      <Poly pts={ring} fill={glass.L} data-glass="L" className={s.edge} />
       {/* 지붕 두 면 (장소색) */}
       <Poly pts={[[x - o, y - o, lo], [xc, y - o, top + RISE], [xc, front, top + RISE], [x - o, front, lo]]} fill={shade(color, 0.22)} />
       <Poly pts={[[xc, y - o, top + RISE], [x + w + o, y - o, lo], [x + w + o, front, lo], [xc, front, top + RISE]]} fill={shade(color, -0.04)} />

@@ -1,0 +1,149 @@
+import { describe, expect, it } from 'vitest'
+import { FAQS, PROJECTS, PUBLIC_PROJECTS } from '@/content'
+import { BAND, CLOSING, FEATURED_PROJECTS, HERO, PROJECTS_STORY, SPRINT_LINE, VOICES, voices, WAYS } from '@/content/story'
+import { isShowableVoice, projectCounts } from './homeData'
+
+/** 화면에 나오는 홈 문장 */
+const shown: { where: string; text: string }[] = [
+  ...HERO.title.before.map((t, i) => ({ where: `HERO.before[${i}]`, text: t })),
+  ...HERO.title.after.map((t, i) => ({ where: `HERO.after[${i}]`, text: t })),
+  { where: 'HERO.pitch', text: HERO.pitch },
+  { where: 'PROJECTS_STORY.eyebrow', text: PROJECTS_STORY.eyebrow },
+  { where: 'PROJECTS_STORY.title', text: PROJECTS_STORY.title },
+  ...PROJECTS_STORY.sub.map((t, i) => ({ where: `PROJECTS_STORY.sub[${i}]`, text: t })),
+  { where: 'PROJECTS_STORY.more', text: PROJECTS_STORY.more },
+  { where: 'BAND.title', text: BAND.title },
+  { where: 'BAND.next.kicker', text: BAND.next.kicker },
+  ...BAND.lines.map((t, i) => ({ where: `BAND.lines[${i}]`, text: t })),
+  ...WAYS.flatMap((w) => [
+    { where: `WAYS.${w.id}.label`, text: w.label },
+    { where: `WAYS.${w.id}.name`, text: w.name },
+    { where: `WAYS.${w.id}.key`, text: w.key },
+    { where: `WAYS.${w.id}.body`, text: w.body },
+    { where: `WAYS.${w.id}.link`, text: w.link.label },
+  ]),
+  { where: 'SPRINT_LINE.key', text: SPRINT_LINE.key },
+  { where: 'SPRINT_LINE.before', text: SPRINT_LINE.before },
+  { where: 'SPRINT_LINE.after', text: SPRINT_LINE.after },
+  ...Object.entries(CLOSING.status).map(([k, t]) => ({ where: `CLOSING.status.${k}`, text: t })),
+  { where: 'CLOSING.title', text: CLOSING.title },
+  { where: 'VOICES.title', text: VOICES.title },
+]
+
+/** 주장 제목 (이야기 섹션 h2): 질문형 금지 */
+const claims = [PROJECTS_STORY.title, BAND.lines.join(' '), CLOSING.title, VOICES.title]
+
+/** 끝나는 문장 (~니다.) 만 */
+const sentences = shown.filter((x) => /[.]$/.test(x.text) && !x.where.startsWith('HERO.before') && !x.where.startsWith('HERO.after'))
+
+/** content.test.ts 와 같은 규칙: 영어 · 숫자 · 닫는 괄호 뒤에 띄어 쓴 조사 */
+const SPACED_PARTICLE = /[A-Za-z0-9)] (은|는|이|가|을|를|으로|로|와|과|에|에서|의|에는|에서는|으로는|로는|이나|나|도|만|부터|까지|입니다|이다)(\s|$|[.,?!·)])/
+
+describe('홈 문구 (content/story.ts)', () => {
+  it('모든 블록에 출처가 있다', () => {
+    for (const x of [HERO, PROJECTS_STORY, FEATURED_PROJECTS, BAND, ...WAYS, CLOSING]) {
+      const src = Array.isArray(x.source) ? x.source : [x.source]
+      expect(src.length, JSON.stringify(x).slice(0, 60)).toBeGreaterThan(0)
+      for (const s of src) expect(String(s).trim().length).toBeGreaterThan(0)
+    }
+  })
+
+  it('조사는 붙여 쓰고, 화면 날짜는 점으로 쓴다', () => {
+    expect(shown.filter((x) => SPACED_PARTICLE.test(x.text)).map((x) => `${x.where}: ${x.text}`)).toEqual([])
+    expect(shown.filter((x) => /\d{4}-\d{2}-\d{2}/.test(x.text)).map((x) => x.where)).toEqual([])
+  })
+
+  it('말투는 모두 ~습니다체 (해요체가 섞이지 않는다)', () => {
+    expect(sentences.length).toBeGreaterThan(8)
+    for (const x of sentences) expect(x.text, x.where).toMatch(/니다\.$/)
+    for (const x of shown) expect(x.text, x.where).not.toMatch(/(해요|어요|아요|예요|돼요|세요)\.$/)
+  })
+
+  it('첫 화면 h1 은 데모데이 앞뒤로 시제만 바뀐다', () => {
+    expect(HERO.title.before.slice(0, -1)).toEqual(HERO.title.after.slice(0, -1))
+    expect(HERO.title.before.at(-1)).toMatch(/냅니다\.$/)
+    expect(HERO.title.after.at(-1)).toMatch(/냈습니다\.$/)
+  })
+
+  it('주장 제목은 질문형으로 쓰지 않는다', () => {
+    for (const t of claims) {
+      expect(t, t).not.toMatch(/[?？]/)
+      expect(t, t).not.toMatch(/^(어떻게|왜|무엇|누가|언제|어디)/)
+    }
+  })
+
+  it('한 사실은 한 번: 띠 문장의 말 · G-Sprint 규모가 다른 문장에 다시 나오지 않는다', () => {
+    const others = shown.filter((x) => !x.where.startsWith('BAND.'))
+    expect(others.filter((x) => /각자 풀/.test(x.text)).map((x) => x.where)).toEqual([])
+    // G-Sprint 규모는 칸의 큰 숫자 한 곳에서만 말한다 (문장은 말하지 않는다)
+    expect(shown.filter((x) => /\{teams\}|\{members\}/.test(x.text)).map((x) => x.where)).toEqual(['SPRINT_LINE.key'])
+    // 화요일 세션: 시각은 큰 숫자, '매주 화요일' 은 작은 이름, 문장은 파트만
+    const sessions = WAYS.find((w) => w.id === 'sessions')!
+    expect(sessions.key).toMatch(/^\d{2}:\d{2}$/)
+    expect(sessions.label).toMatch(/화요일/)
+    expect(sessions.body).not.toMatch(/\d시|\d{2}:\d{2}/)
+  })
+
+  it('띠 안은 정확히 세 칸 (화요일 세션 · G-Sprint · 연합 행사), 칸마다 작은 이름 · 사이트 안 링크 하나', () => {
+    expect(WAYS.map((w) => w.id)).toEqual(['sessions', 'sprint', 'joint'])
+    for (const w of WAYS) {
+      expect(w.label.trim().length, w.id).toBeGreaterThan(0)
+      // 큰 숫자는 숫자로 시작한다 ('매주 18:00' 처럼 단위가 숫자 앞에 오지 않게)
+      expect(w.key, w.id).toMatch(/^(\d|\{day\})/)
+      expect(w.link.to, w.id).toMatch(/^\/[a-z]/)
+      expect(w.body.split(/(?<=\.)\s/), w.id).toHaveLength(1)
+    }
+    expect(SPRINT_LINE.key).toMatch(/^\{teams\}/)
+    expect(new Set(WAYS.map((w) => w.link.to)).size).toBe(3)
+    expect(BAND.next.to).toMatch(/^\/community/)
+  })
+
+  it('연합 행사 칸의 큰 숫자는 문장에 적은 챕터 수와 같다', () => {
+    const joint = WAYS.find((w) => w.id === 'joint')!
+    const n = Number(joint.key.match(/\d+/)?.[0])
+    const names = joint.body.split('챕터와')[0].split('·').map((x) => x.trim()).filter(Boolean)
+    expect(names.length).toBeGreaterThan(1)
+    expect(n).toBe(names.length)
+  })
+
+  it('프로젝트 숫자는 문구에 적지 않고 데이터에서 센다', () => {
+    expect(PROJECTS_STORY.title).toContain('{n}')
+    expect(PROJECTS_STORY.more).toContain('{n}')
+    expect(PROJECTS_STORY.sub.join(' ')).toContain('{sc}')
+    for (const t of [PROJECTS_STORY.title, ...PROJECTS_STORY.sub, PROJECTS_STORY.more]) expect(t.replace(/\{\w+\}/g, ''), t).not.toMatch(/\d/)
+    // 지금 콘텐츠로 센 값: 완성된 공개 프로젝트가 있고, Solution Challenge 수는 그보다 많지 않다. 커밋 수는 쓰지 않는다
+    const { done, solutionChallenge } = projectCounts(PUBLIC_PROJECTS)
+    expect(done).toBeGreaterThan(0)
+    expect(solutionChallenge).toBeGreaterThan(0)
+    expect(solutionChallenge).toBeLessThanOrEqual(done)
+    expect(shown.filter((x) => /커밋/.test(x.text)).map((x) => x.where)).toEqual([])
+  })
+
+  it('홈의 프로젝트 · 자주 묻는 질문은 콘텐츠에 있는 것', () => {
+    const faqIds = new Set(FAQS.map((f) => f.id))
+    for (const id of CLOSING.faqIds) expect(faqIds.has(id), id).toBe(true)
+    expect(CLOSING.faqIds).toHaveLength(3)
+    const byId = new Map(PROJECTS.map((p) => [p.id, p]))
+    // 큰 타일: 설명과 실제 그림(화면 · 소개 그림)이 있다. 첫째는 실제 데스크톱 화면 + 폰 화면이 있다 (겹쳐 건다)
+    expect(FEATURED_PROJECTS.big).toHaveLength(2)
+    for (const id of FEATURED_PROJECTS.big) {
+      const p = byId.get(id)
+      expect(p?.summary, id).toBeTruthy()
+      expect([p?.cover, ...(p?.images ?? [])].some((img) => img?.kind === 'screen' || img?.kind === 'promo'), id).toBe(true)
+    }
+    const first = byId.get(FEATURED_PROJECTS.big[0])
+    const kinds = new Set([first?.cover, ...(first?.images ?? [])].map((img) => img?.kind))
+    expect(kinds.has('screen') && kinds.has('mobile')).toBe(true)
+    // 아이콘 줄: 여덟 개, 모두 실제 로고 · 앱 아이콘 표지가 있고 큰 타일과 겹치지 않는다
+    expect(FEATURED_PROJECTS.icons).toHaveLength(8)
+    for (const id of FEATURED_PROJECTS.icons) {
+      expect(byId.get(id)?.cover?.kind, id).toBe('logo')
+      expect(byId.get(id)?.status, id).toBe('done')
+      expect(FEATURED_PROJECTS.big as readonly string[], id).not.toContain(id)
+    }
+  })
+
+  it('사람: 비어 있거나, 모두 공개 동의 기록이 있다 (지어낸 후기 금지)', () => {
+    for (const v of voices) expect(isShowableVoice(v), v.id).toBe(true)
+  })
+})

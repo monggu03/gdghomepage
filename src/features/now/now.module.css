@@ -36,6 +36,39 @@
   color: var(--ink-500);
 }
 
+/* 폰에서만 보이는 '일정 모두 보기' (넓은 화면은 달력 펼침) */
+.homeMore {
+  display: none;
+}
+
+/* 다음 일정 D-n: 홈에서 D-숫자는 여기 하나 (위 괘선으로 묶은 데이터) */
+.next {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  column-gap: 14px;
+  max-width: 22em;
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-900);
+}
+.nextLabel {
+  grid-column: 1 / -1;
+  font: var(--t-meta);
+  color: var(--ink-700);
+}
+.nextDday {
+  margin-top: 4px;
+  font: 600 40px/40px var(--font-num);
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+.nextWhat {
+  padding-bottom: 2px;
+  font: 600 15px/22px var(--font-kr);
+  color: var(--ink-900);
+}
+
 /* ── 학기 레일 ── */
 .rail {
   position: relative; /* 떠 있는 이름표 자리 */
@@ -412,8 +445,10 @@
   text-underline-offset: 4px;
   cursor: pointer;
 }
-.toggle:hover {
-  text-decoration-thickness: 2px;
+@media (hover: hover) {
+  .toggle:hover {
+    text-decoration-thickness: 2px;
+  }
 }
 .toggleIcon {
   transition: transform var(--dur-open) var(--ease);
@@ -463,8 +498,10 @@
   cursor: pointer;
   transition: border-color var(--dur-hover) var(--ease);
 }
-.calNav button:hover {
-  border-color: var(--ink-500);
+@media (hover: hover) {
+  .calNav button:hover {
+    border-color: var(--ink-500);
+  }
 }
 .calTable {
   border-top: 1px solid var(--ink-900);
@@ -531,8 +568,9 @@
 .cellEvents li > i {
   margin-top: 5px;
 }
+/* 휴회는 옅게. 화요일 열의 옅은 면 위에서도 4.5:1 이 되도록 ink-700 (ink-500 은 4.4:1) */
 .cellEvents li[data-rest] {
-  color: var(--ink-500);
+  color: var(--ink-700);
 }
 .cellTitle {
   display: -webkit-box;
@@ -554,6 +592,9 @@
   .lede {
     max-width: 38em;
   }
+  .next {
+    margin-top: 20px;
+  }
   /* 레일이 넘어가는 폭에서는 화면 끝까지 넓혀, 흐린 가장자리가 글 여백 안쪽을 자르지 않게 */
   .scroller {
     margin-inline: calc(-1 * var(--side)) calc(-1 * var(--side-r));
@@ -564,6 +605,18 @@
 @media (max-width: 767px) {
   .root {
     row-gap: 24px;
+  }
+  /* 홈 폰: 학기 레일은 가로로 넘겨야 보여서 빼고, G-Sprint 한 줄과 다가오는 일정만 (커뮤니티 · 지원 안내의 레일은 그대로) */
+  .homeRail,
+  .homeCal {
+    display: none;
+  }
+  .homeMore {
+    display: block;
+    margin-top: 12px;
+  }
+  .homeMore :global(.link) {
+    min-height: 44px;
   }
   .sprint {
     column-gap: 14px;

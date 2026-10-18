@@ -1,11 +1,14 @@
 {
-  "note": "모집 상태와 지난 모집 기록. 4기 기록은 인스타그램 모집 게시물 · Linktree 지원서 기준. 단계는 시작한 날 순서로 적는다.",
-  "updatedAt": "2026-10-17",
+  "note": "모집 상태와 지난 모집 기록. 5기 모집이 정해지면 current에서 opensAt · deadline · applyUrl 세 칸만 채운다 (모집 상태는 날짜로 계산, src/content/recruitingStatus.ts). status와 message는 예전 필드로, 아직 읽는 화면이 있어 남겨 둔다. 4기 기록은 인스타그램 모집 게시물 · Linktree 지원서 기준. 단계는 시작한 날 순서로 적는다.",
+  "updatedAt": "2026-10-18",
   "current": {
     "generation": 5,
+    "opensAt": null,
+    "deadline": null,
+    "applyUrl": null,
+    "channel": "https://www.instagram.com/gdg.donggukuniv/",
     "status": "closed",
-    "message": "5기 모집 일정은 아직 정해지지 않았습니다. 정해지면 이 페이지와 인스타그램에 가장 먼저 공지합니다.",
-    "channel": "https://www.instagram.com/gdg.donggukuniv/"
+    "message": "5기 모집 일정은 아직 정해지지 않았습니다. 정해지면 이 페이지와 인스타그램에 가장 먼저 공지합니다."
   },
   "history": [
     {

@@ -1,242 +1,198 @@
-import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo } from 'react'
 import { PLACE_BY_ID, placeColor } from '@/config/places'
 import { SITE } from '@/config/site'
-import { CHAPTER, CONTENT_UPDATED_AT, GENERATIONS } from '@/content'
+import { CHAPTER, CONTENT_UPDATED_AT, FAQS, GENERATIONS, PUBLIC_PROJECTS } from '@/content'
+import { withoutStalePlans } from '@/content/plan'
 import { useSchedule } from '@/data/queries'
 import type { ScheduleEvent } from '@/domain/types'
+import { JoinStrip, StorySection } from '@/features/common'
+import { PlaceHero, type DirectoryRow } from '@/features/placehero/PlaceHero'
 import { useToday } from '@/hooks/useToday'
-import { ddayLabel } from '@/lib/date'
-import { upcomingEvents } from '@/lib/schedule'
-import { EventRows } from './EventRows'
-import { basisLabel, dateLabel } from './format'
-import { ExternalLink, PageHead, Section, StateLine, ToggleGroup } from './PageParts'
-import {
-  COLLAPSED_COUNT,
-  KIND_FILTERS,
-  generationRange,
-  generationsIn,
-  groupByGeneration,
-  isKindFilter,
-  kindCounts,
-  matchesKind,
-  pastEvents,
-  type GenerationGroup,
-  type KindFilterId,
-} from './records'
+import { monthDay, weekday } from '@/lib/date'
+import { Archive } from './community/Archive'
+import { countWord, yearRows } from './community/heatmap'
+import { sortGenerations, tallies } from './community/history'
+import { OverviewToggle } from './community/OverviewToggle'
+import { dotDate, pageSources } from './community/pageSources'
+import { PageSources } from './community/Signage'
+import { explainedTerms, firstMentions, mentionKey } from './community/terms'
+import { REGULAR_SESSION, regularTime, weekState } from './community/thisWeek'
+import { Upcoming } from './community/Upcoming'
+import { useHashScroll } from './community/useHashScroll'
+import { WeekBand } from './community/WeekBand'
+import { YearHeatmap } from './community/YearHeatmap'
+import { dotMonth } from './format'
+import { Section, StateLine } from './PageParts'
+import { pastEvents } from './records'
 import s from './pages.module.css'
+import c from './community/community.module.css'
 
 const EMPTY: ScheduleEvent[] = []
 
-/**
- * 다가오는 일정 끝 칸: 첫 줄에만 D-day. 이미 시작한 여러 날 행사는 '진행 중'.
- * 줄마다 D-숫자를 달면 가장 가까운 일정이 묻힌다.
- */
-function untilLabel(e: ScheduleEvent, index: number, today: string): string | null {
-  if (e.date <= today) return '진행 중'
-  return index === 0 ? ddayLabel(e.date, today) : null
-}
+/** 정기 세션 시간의 출처 (faq.json when-sessions). FAQ 가 없으면 시간을 쓰지 않는다 */
+const sessionFaq = FAQS.find((f) => f.id === REGULAR_SESSION.faqId)
+const timeOf = (e: ScheduleEvent) => (sessionFaq ? regularTime(e) : null)
 
-/** 기수 하나의 행사 기록. 길면 최근 8건만 보이고 나머지는 '더 보기' */
-function GenerationBlock({ group, open, onToggle, today }: { group: GenerationGroup; open: boolean; onToggle: () => void; today: string }) {
-  const info = group.gen === null ? undefined : GENERATIONS.find((g) => g.n === group.gen)
-  const range = info ? generationRange(info) : null
-  const listId = `records-${group.gen ?? 'none'}`
-  const hidden = group.events.length - COLLAPSED_COUNT
-  const shown = open || hidden <= 0 ? group.events : group.events.slice(0, COLLAPSED_COUNT)
-  return (
-    <div className={s.gen}>
-      <div className={s.genHead}>
-        <h3>
-          {group.gen === null ? (
-            '기수 기록 없음'
-          ) : (
-            <>
-              <span className="num">{group.gen}</span>기
-            </>
-          )}
-        </h3>
-        {info && (
-          <p className={s.genMeta}>
-            {info.name}
-            {range && (
-              <>
-                {' '}
-                · <span className="num">{range}</span>
-              </>
-            )}
-          </p>
-        )}
-        <p className={`${s.genCount} num`}>{group.events.length}건</p>
-      </div>
-      {info?.summary && <p className={s.genSummary}>{info.summary}</p>}
-      <EventRows
-        id={listId}
-        label={group.gen === null ? '기수 기록 없는 행사' : `${group.gen}기 행사`}
-        events={shown}
-        today={today}
-      />
-      {hidden > 0 && (
-        <button type="button" className={`link ${s.more}`} aria-expanded={open} aria-controls={listId} onClick={onToggle}>
-          {open ? '접기' : `${hidden}건 더 보기`}
-        </button>
-      )}
-    </div>
-  )
-}
+const GENS = sortGenerations(GENERATIONS)
+const COMMUNITY_COLOR = placeColor('community')
 
 /**
- * 행사 기록: 기수 · 종류로 거른다. 거른 상태는 주소의 ?gen=3&kind=session 에 남아 그대로 공유된다.
+ * 커뮤니티 (시안 E): 건물 앞 머리 → 먹색 '이번 주'(다음 모임 큰 표) → 다가오는 일정(참고, 촘촘한 목록)
+ * → 옅은 회색 '세 기수의 1년'(행사 달력, 주장 '세 기수가 연 공개 행사 45번') → 기수별 기록(참고) → 페이지 끝 JoinStrip.
+ * 면: 흰(머리) → 먹색 → 흰 → 옅은 회색 → 흰 → 옅은 회색(JoinStrip) → 먹색 꼬리말. 큰 숫자 묶음은 두지 않는다 (숫자는 제목 · 글줄 안에).
+ * 날짜가 지났는데 계획으로만 남은 일정은 처음부터 뺀다 (content/plan.ts).
+ * 우리끼리 말은 화면에 처음 나오는 자리에서 한 번만 풀어 쓴다: 다가오는 일정 → 기수 요약 · 기록 순서.
  */
-function Records({ past, today }: { past: readonly ScheduleEvent[]; today: string }) {
-  const [params, setParams] = useSearchParams()
-  const [open, setOpen] = useState<ReadonlySet<string>>(new Set())
-
-  const gens = generationsIn(past)
-  const genParam = Number(params.get('gen'))
-  const gen = gens.includes(genParam) ? genParam : null
-  const kindParam = params.get('kind')
-  const kind: KindFilterId = isKindFilter(kindParam) ? kindParam : 'all'
-
-  const inGen = gen === null ? past : past.filter((e) => e.generation === gen)
-  const counts = kindCounts(inGen)
-  const shown = inGen.filter((e) => matchesKind(e, kind))
-  const groups = groupByGeneration(shown)
-
-  const setParam = (key: 'gen' | 'kind', value: string | null) => {
-    const next = new URLSearchParams(params)
-    if (value === null) next.delete(key)
-    else next.set(key, value)
-    setParams(next, { replace: true, preventScrollReset: true })
-  }
-  const toggle = (key: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-
-  if (past.length === 0) {
-    return (
-      <StateLine>
-        아직 옮겨 온 행사 기록이 없습니다. 지난 행사는{' '}
-        <ExternalLink href={CHAPTER.chapterPage} className={s.inlineLink}>
-          gdg.community.dev 챕터 페이지
-        </ExternalLink>
-        에서 먼저 볼 수 있습니다.
-      </StateLine>
-    )
-  }
-
-  const filtered = gen !== null || kind !== 'all'
-  const genLabel = gen === null ? '모든 기수' : `${gen}기`
-  const kindLabel = KIND_FILTERS.find((f) => f.id === kind)?.label ?? '전체'
-  return (
-    <>
-      <div className={s.filters}>
-        {gens.length > 1 && (
-          <ToggleGroup
-            label="기수"
-            value={gen === null ? 'all' : String(gen)}
-            onChange={(v) => setParam('gen', v === 'all' ? null : v)}
-            options={[{ id: 'all', label: '전체' }, ...gens.map((g) => ({ id: String(g), label: `${g}기` }))]}
-          />
-        )}
-        <ToggleGroup
-          label="종류"
-          value={kind}
-          onChange={(v) => setParam('kind', v === 'all' ? null : v)}
-          options={KIND_FILTERS.map((f) => ({ id: f.id, label: f.label, count: counts[f.id] }))}
-        />
-      </div>
-      {/* 거르지 않았을 때는 '전체 45' 칩과 같은 말이라 화면 읽기 프로그램에만 */}
-      <p className={filtered ? s.resultLine : 'visually-hidden'} role="status">
-        {genLabel} · {kindLabel} <span className="num">{shown.length}</span>건
-        {filtered && (
-          <>
-            {' '}
-            <button type="button" className="link" onClick={() => setParams(new URLSearchParams(), { replace: true, preventScrollReset: true })}>
-              거르기 풀기
-            </button>
-          </>
-        )}
-      </p>
-      {groups.length === 0 ? (
-        <StateLine>이 조건에 맞는 행사 기록이 없습니다.</StateLine>
-      ) : (
-        <div className={s.gens}>
-          {groups.map((g) => {
-            const key = String(g.gen)
-            return <GenerationBlock key={key} group={g} today={today} open={open.has(key)} onToggle={() => toggle(key)} />
-          })}
-        </div>
-      )}
-    </>
-  )
-}
-
-/** 커뮤니티: 다가오는 일정 → 기수별 행사 기록 → 게시판 안내 */
 export function CommunityPage() {
   const today = useToday()
   const { data, isPending, isError, refetch } = useSchedule()
-  const events = data ?? EMPTY
+  const events = useMemo(() => withoutStalePlans(data ?? EMPTY, today), [data, today])
+  const ready = !isPending && !isError
   const past = useMemo(() => pastEvents(events, today), [events, today])
-  const upcoming = useMemo(() => upcomingEvents(events, today), [events, today])
-  const pastBasis = basisLabel(past.map((e) => e.source))
-  const upcomingBasis = basisLabel(upcoming.map((e) => e.source))
+  const ahead = useMemo(
+    () => events.filter((e) => (e.endDate ?? e.date) >= today).sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title, 'ko')),
+    [events, today],
+  )
+  const upcomingCount = ahead.filter((e) => e.kind !== 'rest').length
+  const week = useMemo(() => weekState(events, today), [events, today])
+  const lineTerms = useMemo(() => firstMentions(ahead.map((e) => ({ key: mentionKey.line(e), text: e.title }))), [ahead])
+  const explainedAbove = useMemo(() => explainedTerms(lineTerms), [lineTerms])
+  const year = useMemo(() => yearRows(GENS, events, today), [events, today])
+  const held = year.reduce((n, r) => n + r.past, 0)
+  // 기록 섹션의 숫자 글줄: 지난 행사 수는 달력 제목이 말하므로 여기서는 멤버 · 프로젝트만
+  const tally = tallies(CHAPTER.members?.value, 0, PUBLIC_PROJECTS.length)
+  const asOf = CHAPTER.members?.asOf ?? CHAPTER.updatedAt
+  useHashScroll(ready)
 
   const loading = isPending && <StateLine>일정을 불러오는 중입니다.</StateLine>
   const failed = isError && <StateLine onRetry={() => void refetch()}>일정을 불러오지 못했습니다.</StateLine>
 
+  const { status, meet, next } = week
+  const weekValue =
+    status === 'rest'
+      ? `${monthDay(meet)} ${weekday(meet)} · 휴회`
+      : status === 'meet'
+        ? `${monthDay(meet)} ${weekday(meet)} · 모임`
+        : status === 'quiet'
+          ? `${monthDay(meet)} ${weekday(meet)} · 일정 미공개`
+          : '잡힌 일정 없음'
+  const firstGen = GENS[0]
+  const lastGen = GENS[GENS.length - 1]
+  const genSpan = GENS.length > 1 ? `${firstGen.n}–${lastGen.n}기` : lastGen ? `${lastGen.n}기` : ''
+  const directory: DirectoryRow[] = ready
+    ? [
+        { label: '이번 주', value: weekValue, href: '#this-week' },
+        { label: '다가오는 일정', value: <><span className="num">{upcomingCount}</span>건</>, href: '#upcoming' },
+        ...(held > 0 ? [{ label: '지난 행사', value: <><span className="num">{held}</span>건</>, href: '#year' }] : []),
+        ...(genSpan ? [{ label: '기수별 기록', value: <span className="num">{genSpan}</span>, href: '#records' }] : []),
+      ]
+    : []
+
+  // 이 페이지가 기대는 출처: 행사 페이지 · 운영 계획 · 4기 지원서(정기 세션 시간) · 챕터 멤버 수 · 기수 연혁 · GitHub
+  const sources = useMemo(
+    () =>
+      pageSources(
+        [
+          ...past.map((e) => e.source),
+          ...ahead.map((e) => e.source),
+          sessionFaq?.source,
+          CHAPTER.members?.source,
+          ...GENS.flatMap((g) => g.source),
+          CHAPTER.github,
+        ],
+        { 'gdg.community.dev': CHAPTER.chapterPage, 'github.com': CHAPTER.github },
+      ),
+    [past, ahead],
+  )
+  const planSource = [...new Set(ahead.filter((e) => !e.url && e.source && !/^https?:/.test(e.source)).map((e) => e.source))].join(' · ')
+
   return (
     <div className={`container ${s.page}`}>
-      <PageHead
-        mark={placeColor('community')}
+      <PlaceHero
+        place="community"
         eyebrow={PLACE_BY_ID.community.sub}
         title="커뮤니티"
-        lead="화요일 정기 세션과 학기마다 여는 행사를 모았습니다. 다가오는 일정을 먼저, 지난 행사는 기수별로 보여 줍니다."
-        meta={
-          <>
-            {past.length > 0 && (
-              <>
-                지난 행사 <span className="num">{past.length}</span>건{pastBasis && ` · ${pastBasis} 기준`} ·{' '}
-              </>
-            )}
-            <span className="num">{dateLabel(CONTENT_UPDATED_AT, null, today)}</span> 갱신
-          </>
-        }
+        lead="화요일 정기 세션과 학기마다 여는 행사, 1기부터 지금까지의 기록을 모았습니다."
+        directory={directory}
+        screen={next ? { date: next.date, title: next.title } : undefined}
       />
+
+      {loading || failed || <WeekBand week={week} timeOf={timeOf} regular={Boolean(sessionFaq)} />}
 
       <Section
         id="upcoming"
         title="다가오는 일정"
-        desc={
-          <>
-            {upcomingBasis ? `${upcomingBasis} 기준입니다. ` : ''}바뀌면 인스타그램에 먼저 알립니다. 휴회 주는 뺐습니다.
-          </>
+        desc={planSource ? `${planSource}에 있는 일정은 바뀔 수 있고, 바뀌면 인스타그램에 먼저 알립니다.` : '바뀌면 인스타그램에 먼저 알립니다.'}
+      >
+        {loading ||
+          failed ||
+          (ahead.length === 0 ? (
+            <StateLine>지금 공개된 다가오는 일정이 없습니다. 새 일정은 인스타그램 {SITE.links.instagramHandle}에 먼저 올립니다.</StateLine>
+          ) : (
+            <>
+              <Upcoming events={ahead} today={today} timeOf={timeOf} terms={lineTerms} />
+              <OverviewToggle events={events} today={today} />
+            </>
+          ))}
+      </Section>
+
+      {ready && year.length > 0 && (
+        <StorySection
+          id="year"
+          tone="field"
+          eyebrow="1년 달력"
+          placeColor={COMMUNITY_COLOR}
+          title={
+            <>
+              {countWord(year.length)} 기수가 연 공개 행사 <span className="num">{held}</span>번
+            </>
+          }
+          sub={
+            <>
+              <span className={c.subLine}>gdg.community.dev에 공개된 행사만 셌습니다.</span>{' '}
+              <span className={c.subLine}>한 줄이 한 기수의 9월–8월, 칸 하나가 하루입니다.</span>
+            </>
+          }
+        >
+          <YearHeatmap rows={year} events={events} today={today} />
+        </StorySection>
+      )}
+
+      <Section
+        id="records"
+        title="기수별 기록"
+        desc="공개된 기록만 모았습니다. 끝난 행사는 원래 행사 페이지로 이어집니다."
+        aside={
+          tally.length > 0 && (
+            <p className={c.tallyLine}>
+              {tally.map((t, i) => (
+                <span key={t.id} className={c.tallyItem}>
+                  {i > 0 && (
+                    <>
+                      <span className={c.tallySep} aria-hidden="true">
+                        ·
+                      </span>
+                      <span className="visually-hidden">, </span>
+                    </>
+                  )}
+                  {t.label} <span className={`num ${c.tallyValue}`}>{t.value.toLocaleString('ko-KR')}</span>
+                  {t.unit}
+                </span>
+              ))}
+              {asOf && (
+                <span className={c.tallyBasis}>
+                  <span className="num">{dotMonth(asOf)}</span> 기준
+                </span>
+              )}
+            </p>
+          )
         }
       >
-        {loading || failed || (upcoming.length === 0 ? (
-          <StateLine>지금 공개된 다가오는 일정이 없습니다. 새 일정은 인스타그램 {SITE.links.instagramHandle}에 먼저 올립니다.</StateLine>
-        ) : (
-          <EventRows events={upcoming} today={today} label="다가오는 일정" note={(e, i) => untilLabel(e, i, today)} />
-        ))}
+        {loading || failed || <Archive gens={GENS} past={past} today={today} explained={explainedAbove} />}
+        <PageSources items={sources} updated={<>일정 <span className="num">{dotDate(CONTENT_UPDATED_AT)}</span> 갱신</>} />
       </Section>
 
-      <Section id="records" title="행사 기록" desc="끝난 행사를 기수별로 모았습니다. 원래 게시된 행사 페이지가 있으면 함께 걸었습니다." sticky>
-        {loading || failed || <Records past={past} today={today} />}
-      </Section>
-
-      <Section id="board" title="게시판" quiet>
-        <p className={s.note}>
-          공지와 정보 공유 글쓰기는 운영진 관리 페이지와 함께 엽니다. 여는 시기는 아직 정하지 않았습니다. 그동안 공지는{' '}
-          <ExternalLink href={SITE.links.instagram} className={s.inlineLink}>
-            인스타그램 {SITE.links.instagramHandle}
-          </ExternalLink>
-          에 올립니다.
-        </p>
-      </Section>
+      <JoinStrip />
     </div>
   )
 }

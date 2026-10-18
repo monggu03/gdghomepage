@@ -1,0 +1,121 @@
+import { useSearchParams } from 'react-router-dom'
+import { CHAPTER } from '@/content'
+import type { TermId } from '@/content/glossary'
+import type { Generation, ScheduleEvent } from '@/domain/types'
+import { EventRow, SeriesRow } from '../EventRows'
+import { ExternalLink, StateLine, ToggleGroup } from '../PageParts'
+import { generationRange } from '../records'
+import { partitionGeneration } from './archive'
+import { countByGeneration } from './history'
+import { firstMentions, mentionKey, type Mention } from './terms'
+import { TermText } from './TermText'
+import s from '../pages.module.css'
+import c from './community.module.css'
+
+const summaryKey = (n: number) => `summary:${n}`
+
+/**
+ * 기수별 기록 (시안 E): 기수 버튼 하나 → 그 기수의 한 줄 요약 + 기록 목록.
+ * 예전의 기수 카드 네 장 · '세 기수의 1년' 달력 · 종류 거르기 · 노선도 · 접힌 목록을 이 하나로 줄였다.
+ * 목록 순서: 대표 행사(큰 줄) → 이어 온 세션(한 줄에 회차 수) → 그 밖의 기록.
+ * 고른 기수는 주소의 ?gen=3 에 남아 그대로 공유된다. 처음에는 지금 기수.
+ */
+export function Archive({
+  gens,
+  past,
+  today,
+  explained,
+}: {
+  /** 오래된 기수부터 */
+  gens: readonly Generation[]
+  past: readonly ScheduleEvent[]
+  today: string
+  /** 이 섹션보다 위에서 이미 풀어 쓴 용어 (여기서는 다시 풀지 않는다) */
+  explained?: ReadonlySet<TermId>
+}) {
+  const [params, setParams] = useSearchParams()
+  const order = [...gens].sort((a, b) => b.n - a.n)
+  const counts = countByGeneration(past)
+  const fallback = order.find((g) => g.current) ?? order[0]
+  const asked = Number(params.get('gen'))
+  const info = order.find((g) => g.n === asked) ?? fallback
+
+  if (!info) {
+    return (
+      <StateLine>
+        아직 옮겨 온 기록이 없습니다. 지난 행사는{' '}
+        <ExternalLink href={CHAPTER.chapterPage} className={s.inlineLink}>
+          gdg.community.dev 챕터 페이지
+        </ExternalLink>
+        에서 먼저 볼 수 있습니다.
+      </StateLine>
+    )
+  }
+
+  const events = past.filter((e) => e.generation === info.n)
+  const { signature, routes, rows } = partitionGeneration(events)
+  const mentions: Mention[] = [
+    ...(info.summary ? [{ key: summaryKey(info.n), text: info.summary }] : []),
+    ...signature.map((e) => ({ key: mentionKey.record(e), text: e.title })),
+    ...routes.map((r) => ({ key: mentionKey.route(info.n, r.series), text: r.series })),
+  ]
+  const terms = firstMentions(mentions, explained)
+  const range = generationRange(info)
+
+  const choose = (v: string) => {
+    const next = new URLSearchParams(params)
+    if (Number(v) === fallback?.n) next.delete('gen')
+    else next.set('gen', v)
+    setParams(next, { replace: true, preventScrollReset: true })
+  }
+
+  return (
+    <div className={c.archive}>
+      <ToggleGroup
+        label="기수"
+        value={String(info.n)}
+        onChange={choose}
+        options={order.map((g) => ({ id: String(g.n), label: `${g.n}기`, count: counts.get(g.n) ?? 0 }))}
+      />
+      <div className={c.genPanel} id="archive" aria-live="polite">
+        <div className={c.genIntro}>
+          <h3 className={c.genTitle}>
+            {info.current ? <span className="gen-tag">{info.n}기</span> : <span className="num">{info.n}기</span>}
+            {info.current && <span className="visually-hidden"> (지금 기수)</span>}
+            <span className={c.genName}>
+              <span lang="en">{info.name}</span>
+              {range && (
+                <>
+                  {' · '}
+                  <span className="num">{range}</span>
+                </>
+              )}
+            </span>
+          </h3>
+          {info.summary && (
+            <p className={c.genSummary}>
+              <TermText text={info.summary} terms={terms.get(summaryKey(info.n))} />
+            </p>
+          )}
+        </div>
+        {events.length === 0 ? (
+          <p className={c.genEmpty}>
+            gdg.community.dev에 공개된 {info.n}기 행사 기록은 없습니다. 이 기수가 남긴 프로젝트는 프로젝트 페이지에 있습니다.
+          </p>
+        ) : (
+          <ul className={s.rows} aria-label={`${info.n}기 행사 기록 ${events.length}건`}>
+            {signature.map((e) => (
+              <EventRow key={e.id} e={e} today={today} size="lg" title={<TermText text={e.title} terms={terms.get(mentionKey.record(e))} />} />
+            ))}
+            {routes.map((r) => (
+              <SeriesRow key={r.series} run={r} today={today} title={<TermText text={r.series} terms={terms.get(mentionKey.route(info.n, r.series))} />} />
+            ))}
+            {rows.map((e) => (
+              <EventRow key={e.id} e={e} today={today} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}

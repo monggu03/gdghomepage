@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { KIND_LABEL } from '@/config/kinds'
 import { placeColor } from '@/config/places'
+import { withoutStalePlans } from '@/content/plan'
 import type { ScheduleEvent } from '@/domain/types'
 import { monthGrid, shiftMonth, weekday } from '@/lib/date'
 import { addDays, spanLabel } from '@/lib/rail'
@@ -36,8 +37,10 @@ interface Props {
  * 월 달력. 화면 읽기 프로그램에는 표로 읽힌다 (주 = 행, 날짜 = 칸).
  * 칸 상자 없이 가로 괘선만, 화요일 열에 옅은 면. 폰에서는 칸에 표식만 두고 그 달 일정을 아래 목록으로 보여준다.
  */
-export function MonthCalendar({ id, events, today }: Props) {
+export function MonthCalendar({ id, events: all, today }: Props) {
   const [ym, setYm] = useState(() => ({ year: +today.slice(0, 4), month: +today.slice(5, 7) }))
+  // 날짜가 지났는데 계획으로만 남은 일정은 칸에 올리지 않는다 (content/plan.ts)
+  const events = useMemo(() => withoutStalePlans(all, today), [all, today])
   const days = useMemo(() => byDay(events), [events])
   const cells = monthGrid(ym.year, ym.month)
   // 6주 고정 달력에서 그 달 날짜가 하나도 없는 마지막 주는 뺀다

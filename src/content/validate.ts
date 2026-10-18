@@ -1,4 +1,4 @@
-import type { EventKind, Faq, Generation, PlaceId, Project } from '@/domain/types'
+import type { EventKind, Faq, Generation, LanguageShare, PlaceId, Project, ProjectImage, ProjectImageKind } from '@/domain/types'
 
 /**
  * 콘텐츠 JSON 검사.
@@ -102,6 +102,34 @@ export function checkEvents(list: unknown): ContentIssue[] {
   }).issues
 }
 
+const IMAGE_KINDS: readonly ProjectImageKind[] = ['screen', 'mobile', 'promo', 'diagram', 'logo']
+
+/** 프로젝트 그림 한 장의 틀린 곳. 비어 있으면 통과 */
+function imageProblems(v: unknown, where: string): string[] {
+  if (!isObject(v)) return [`${where} 는 그림 객체여야 합니다`]
+  const out: string[] = []
+  if (!isText(v.src) || /^(\/|https?:)/.test(v.src) || !/\.(webp|jpe?g|png|svg)$/.test(v.src)) out.push(`${where}.src 는 public/ 기준 경로(앞에 / 없이, 그림 파일)여야 합니다`)
+  if (!isText(v.alt)) out.push(`${where}.alt(그림 설명)가 비어 있습니다`)
+  if (v.caption !== undefined && !isText(v.caption)) out.push(`${where}.caption 은 글자여야 합니다`)
+  if (!IMAGE_KINDS.includes(v.kind as ProjectImageKind)) out.push(`${where}.kind 는 ${IMAGE_KINDS.join(' | ')} 중 하나여야 합니다`)
+  if (!isPositiveInt(v.width) || !isPositiveInt(v.height)) out.push(`${where}.width · height 는 1 이상의 정수여야 합니다`)
+  if (!isHttpsUrl(v.source)) out.push(`${where}.source(원본 주소)는 https 주소여야 합니다`)
+  if (typeof v.teamCleared !== 'boolean') out.push(`${where}.teamCleared 는 true/false 여야 합니다`)
+  return out
+}
+
+const toImage = (v: Raw): ProjectImage => {
+  const img: ProjectImage = { src: v.src as string, alt: v.alt as string, kind: v.kind as ProjectImageKind, width: v.width as number, height: v.height as number, source: v.source as string, teamCleared: v.teamCleared as boolean }
+  if (v.caption !== undefined) img.caption = v.caption as string
+  return img
+}
+
+const isLanguageList = (v: unknown): v is LanguageShare[] =>
+  Array.isArray(v) &&
+  v.length > 0 &&
+  v.every((l) => isObject(l) && isText(l.name) && typeof l.share === 'number' && l.share >= 0 && l.share <= 100) &&
+  v.reduce((sum: number, l: LanguageShare) => sum + l.share, 0) <= 100.5
+
 export function checkProjects(list: unknown): Checked<Project> {
   return checkList('projects.json', list, (raw, problems) => {
     for (const key of ['id', 'name', 'program']) requireText(raw, key, problems)
@@ -115,6 +143,19 @@ export function checkProjects(list: unknown): Checked<Project> {
     // 진행 중 프로젝트는 아직 공개 주소가 없을 수 있다 (예: 개인 저장소에서 만드는 중). 끝난 프로젝트는 꼭 있어야 한다
     if (raw.repo === undefined && raw.url === undefined && raw.status !== 'in-progress') problems.push('끝난 프로젝트는 repo 나 url 중 하나가 있어야 합니다')
     requireSource(raw, problems)
+    // 저장소 숫자 · 그림 (모두 선택)
+    optional(raw, 'demo', (v) => Array.isArray(v) && v.length > 0 && v.every(isHttpsUrl), 'https 주소 목록', problems)
+    optional(raw, 'contributors', isPositiveInt, '1 이상의 정수', problems)
+    optional(raw, 'commits', isPositiveInt, '1 이상의 정수', problems)
+    for (const key of ['firstCommit', 'lastCommit', 'statsAsOf']) optional(raw, key, isValidYmd, 'YYYY-MM-DD', problems)
+    if (isValidYmd(raw.firstCommit) && isValidYmd(raw.lastCommit) && raw.lastCommit < raw.firstCommit) problems.push('lastCommit 이 firstCommit 보다 빠릅니다')
+    optional(raw, 'languages', isLanguageList, '{ name, share } 목록(합 100 이하)', problems)
+    if ((raw.contributors !== undefined || raw.commits !== undefined || raw.languages !== undefined) && raw.statsAsOf === undefined) problems.push('GitHub 숫자에는 statsAsOf(확인한 날)가 있어야 합니다')
+    if (raw.cover !== undefined) problems.push(...imageProblems(raw.cover, 'cover'))
+    if (raw.images !== undefined) {
+      if (!Array.isArray(raw.images)) problems.push('images 는 그림 목록이어야 합니다')
+      else raw.images.forEach((img, i) => problems.push(...imageProblems(img, `images[${i}]`)))
+    }
     if (problems.length) return null as never
     const p: Project = { id: raw.id as string, name: raw.name as string, program: raw.program as string, year: raw.year as number, status: raw.status as Project['status'] }
     if (raw.summary !== undefined) p.summary = raw.summary as string
@@ -123,6 +164,15 @@ export function checkProjects(list: unknown): Checked<Project> {
     if (raw.repo !== undefined) p.repo = raw.repo as string
     if (raw.url !== undefined) p.url = raw.url as string
     p.source = raw.source as string
+    if (raw.demo !== undefined) p.demo = [...(raw.demo as string[])]
+    if (raw.contributors !== undefined) p.contributors = raw.contributors as number
+    if (raw.commits !== undefined) p.commits = raw.commits as number
+    if (raw.firstCommit !== undefined) p.firstCommit = raw.firstCommit as string
+    if (raw.lastCommit !== undefined) p.lastCommit = raw.lastCommit as string
+    if (raw.languages !== undefined) p.languages = (raw.languages as LanguageShare[]).map((l) => ({ name: l.name, share: l.share }))
+    if (raw.statsAsOf !== undefined) p.statsAsOf = raw.statsAsOf as string
+    if (raw.cover !== undefined) p.cover = toImage(raw.cover as Raw)
+    if (raw.images !== undefined) p.images = (raw.images as Raw[]).map(toImage)
     return p
   })
 }

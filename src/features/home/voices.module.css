@@ -1,0 +1,19 @@
+/* 사람: 멤버가 한 말 (괘선 목록). 비어 있으면 섹션째 숨는다 */
+.voices {
+  border-top: 1px solid var(--ink-900);
+}
+.voice {
+  padding-block: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.voice blockquote {
+  margin: 0;
+  max-width: 38em;
+  font: var(--t-lead);
+  color: var(--ink-900);
+}
+.voice figcaption {
+  margin-top: 8px;
+  font: var(--t-meta);
+  color: var(--ink-700);
+}

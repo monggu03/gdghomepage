@@ -92,6 +92,53 @@ export interface Project {
   url?: string
   status: 'done' | 'in-progress'
   source?: string
+  /** 데모 영상 주소 (README 에 걸린 YouTube 등). 서비스 주소(url)와 따로 둔다 */
+  demo?: string[]
+  /** 대표 저장소(repo)의 GitHub 기여자 수 (statsAsOf 기준) */
+  contributors?: number
+  /** 대표 저장소의 커밋 수 (모든 브랜치, statsAsOf 기준) */
+  commits?: number
+  /** 대표 저장소의 첫 커밋 · 마지막 커밋 날짜 'YYYY-MM-DD' (한국 날짜) */
+  firstCommit?: string
+  lastCommit?: string
+  /** 대표 저장소의 GitHub 언어 비율 (바이트 기준 %) */
+  languages?: LanguageShare[]
+  /** GitHub 숫자(contributors · commits · languages)를 확인한 날 'YYYY-MM-DD' */
+  statsAsOf?: string
+  /** 표지 그림. 없으면 화면이 이름 · 연도 · 언어 비율로 글자 표지를 그린다 */
+  cover?: ProjectImage
+  /** 자세히 보기 창에 더 보여 줄 그림 (화면 캡처 · 구조도) */
+  images?: ProjectImage[]
+}
+
+/**
+ * 프로젝트 그림 종류.
+ * screen = 화면 캡처, mobile = 폰 화면 캡처, promo = 팀이 만든 소개 이미지, diagram = 구조도 · ERD, logo = 로고 · 아이콘 · 캐릭터
+ */
+export type ProjectImageKind = 'screen' | 'mobile' | 'promo' | 'diagram' | 'logo'
+
+/** 프로젝트 그림 한 장: 팀 저장소(README · 파일)의 그림을 줄여 public/project-images 에 둔 것 */
+export interface ProjectImage {
+  /** public/ 기준 경로, 앞에 / 없이: 'project-images/yakjosim.webp' */
+  src: string
+  /** 화면 읽기 프로그램용 설명 */
+  alt: string
+  /** 그림 아래 짧은 이름 ('홈 (데스크톱)') */
+  caption?: string
+  kind: ProjectImageKind
+  width: number
+  height: number
+  /** 원본 주소 (GitHub 저장소의 그 파일) */
+  source: string
+  /** 팀이 사이트 게시를 확인했는지. 확인 전이면 false */
+  teamCleared: boolean
+}
+
+/** GitHub 언어 비율 한 줄 */
+export interface LanguageShare {
+  name: string
+  /** 바이트 기준 % (0–100) */
+  share: number
 }
 
 /** 기수 연혁 */

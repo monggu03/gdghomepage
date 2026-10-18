@@ -30,15 +30,24 @@ export interface BuildingProps {
 }
 
 /** 땅에 지는 그림자: 빛이 왼쪽 위에서 오므로 오른쪽(+x)으로 눕는다. 건물이 올라와도 그림자는 땅에 남는다 */
-function Shadow({ fp, rise }: { fp: Footprint; rise: number }) {
+export function Shadow({ fp, rise }: { fp: Footprint; rise: number }) {
   const { x, y, w, d, h } = fp
   const L = (h + rise * 0.6) * 0.75
   const x1 = x + w + PAD
   return <Poly className={s.shadow} pts={[[x1, y + 0.2], [x1 + L, y + 0.2 + L * 0.3], [x1 + L, y + d + L * 0.3], [x1, y + d + PAD]]} />
 }
 
+export interface OpeningsProps {
+  fp: Footprint
+  color: string
+  /** 유리 색 (생략하면 낮 유리 GLASS). 불 켜진 창 · 꺼진 창을 그릴 때 하위 페이지 장면이 바꾼다 */
+  glass?: { readonly L: string; readonly R: string }
+  /** closed: 문을 닫아 둔다 (어두운 문간 대신 닫힌 두 짝 문). 생략하면 열린 문간 */
+  door?: 'open' | 'closed'
+}
+
 /** 층마다 유리 띠 하나 (장소색 없이). 문이 있는 면 1층은 문 자리를 비우고, 문틀만 장소색으로 */
-function Openings({ fp, color }: { fp: Footprint; color: string }) {
+export function Openings({ fp, color, glass = GLASS, door: doorState = 'open' }: OpeningsProps) {
   const { x, y, w, d, h, door } = fp
   const top = FLOOR + h
   const dc = door === 'L' ? x + w / 2 : y + d / 2
@@ -47,7 +56,7 @@ function Openings({ fp, color }: { fp: Footprint; color: string }) {
   const ribbon = (f: Face, a0: number, a1: number, zz: number) => {
     if (a1 - a0 < 0.4) return
     const k = `${f}-${a0.toFixed(2)}-${zz.toFixed(2)}`
-    items.push(<Poly key={k} pts={[P(f, a0, zz), P(f, a1, zz), P(f, a1, zz + RIBBON), P(f, a0, zz + RIBBON)]} fill={GLASS[f]} />)
+    items.push(<Poly key={k} data-glass={f} pts={[P(f, a0, zz), P(f, a1, zz), P(f, a1, zz + RIBBON), P(f, a0, zz + RIBBON)]} fill={glass[f]} />)
     // 창살은 벽색 선 (띠를 몇 칸으로 나눈다)
     const n = Math.max(1, Math.round((a1 - a0) / MULLION))
     for (let m = 1; m < n; m++) {
@@ -70,8 +79,16 @@ function Openings({ fp, color }: { fp: Footprint; color: string }) {
   const fo = DOOR_HALF + FRAME
   items.push(
     <Poly key="frame" pts={[P(door, dc - fo, FLOOR), P(door, dc + fo, FLOOR), P(door, dc + fo, FLOOR + DOOR_H + FRAME), P(door, dc - fo, FLOOR + DOOR_H + FRAME)]} fill={shade(color, door === 'L' ? 0 : -0.16)} />,
-    <Poly key="door" className={s.door} pts={[P(door, dc - DOOR_HALF, FLOOR), P(door, dc + DOOR_HALF, FLOOR), P(door, dc + DOOR_HALF, FLOOR + DOOR_H), P(door, dc - DOOR_HALF, FLOOR + DOOR_H)]} />,
+    <Poly key="door" className={doorState === 'closed' ? s.doorShut : s.door} pts={[P(door, dc - DOOR_HALF, FLOOR), P(door, dc + DOOR_HALF, FLOOR), P(door, dc + DOOR_HALF, FLOOR + DOOR_H), P(door, dc - DOOR_HALF, FLOOR + DOOR_H)]} />,
   )
+  if (doorState === 'closed') {
+    // 닫힌 두 짝 문: 가운데 이음매 + 손잡이 둘
+    items.push(
+      <IsoLine key="seam" from={P(door, dc, FLOOR)} to={P(door, dc, FLOOR + DOOR_H)} className={s.doorSeam} />,
+      <IsoLine key="h1" from={P(door, dc - 0.07, FLOOR + 0.27)} to={P(door, dc - 0.07, FLOOR + 0.37)} className={s.doorHandle} />,
+      <IsoLine key="h2" from={P(door, dc + 0.07, FLOOR + 0.27)} to={P(door, dc + 0.07, FLOOR + 0.37)} className={s.doorHandle} />,
+    )
+  }
   return <>{items}</>
 }
 

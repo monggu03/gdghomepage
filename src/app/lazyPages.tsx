@@ -1,40 +1,59 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { lazy, Suspense, type ComponentType, type ReactNode } from 'react'
 import type { PagePlanId } from '@/config/pages'
+import { CAMPUS_PREVIEW, COMMUNITY_PAGE, NOW_PREVIEW, PLANNED_PAGE, PROJECTS_PAGE, RECRUITS_PAGE, type PageModule } from './pageModules'
 
 /**
  * 첫 화면(홈)만 처음 받는 파일에 넣고, 나머지 페이지는 들어갈 때 받는다.
  * 받는 동안에는 머리말 · 꼬리말은 그대로 두고 본문 자리만 비워 둔다 (꼬리말이 위로 튀지 않게 높이를 잡는다).
+ * 이미 받은 페이지(미리 받기 · 한 번 들어간 페이지)는 Suspense 를 거치지 않고 바로 그린다:
+ * 페이지 전환(View Transitions)이 빈 자리 대신 새 페이지를 찍는다.
  */
 function Loading({ children }: { children: ReactNode }) {
   return <Suspense fallback={<div style={{ minHeight: '100vh' }} />}>{children}</Suspense>
 }
 
-const Projects = lazy(() => import('@/features/pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage })))
-const Community = lazy(() => import('@/features/pages/CommunityPage').then((m) => ({ default: m.CommunityPage })))
-const Recruits = lazy(() => import('@/features/pages/RecruitsPage').then((m) => ({ default: m.RecruitsPage })))
-const Planned = lazy(() => import('@/features/pages/PlannedPage').then((m) => ({ default: m.PlannedPage })))
-const NotFound = lazy(() => import('@/features/pages/PlannedPage').then((m) => ({ default: m.NotFoundPage })))
-const Now = lazy(() => import('@/features/now/NowPreview').then((m) => ({ default: m.NowPreview })))
-const Campus = lazy(() => import('@/features/campus/CampusPreview').then((m) => ({ default: m.CampusPreview })))
+function lazyPage<M, P extends object>(page: PageModule<M>, pick: (m: M) => ComponentType<P>) {
+  const Lazy = lazy(() => page.load().then((m) => ({ default: pick(m) })))
+  return function Page(props: P) {
+    const mod = page.loaded()
+    if (mod) {
+      const Loaded = pick(mod)
+      return <Loaded {...props} />
+    }
+    return (
+      <Loading>
+        <Lazy {...props} />
+      </Loading>
+    )
+  }
+}
+
+const Projects = lazyPage(PROJECTS_PAGE, (m) => m.ProjectsPage)
+const Community = lazyPage(COMMUNITY_PAGE, (m) => m.CommunityPage)
+const Recruits = lazyPage(RECRUITS_PAGE, (m) => m.RecruitsPage)
+const Planned = lazyPage(PLANNED_PAGE, (m) => m.PlannedPage)
+const NotFound = lazyPage(PLANNED_PAGE, (m) => m.NotFoundPage)
+const Now = lazyPage(NOW_PREVIEW, (m) => m.NowPreview)
+const Campus = lazyPage(CAMPUS_PREVIEW, (m) => m.CampusPreview)
 
 export function ProjectsPage() {
-  return <Loading><Projects /></Loading>
+  return <Projects />
 }
 export function CommunityPage() {
-  return <Loading><Community /></Loading>
+  return <Community />
 }
 export function RecruitsPage() {
-  return <Loading><Recruits /></Loading>
+  return <Recruits />
 }
 export function PlannedPage({ id }: { id: PagePlanId }) {
-  return <Loading><Planned id={id} /></Loading>
+  return <Planned id={id} />
 }
 export function NotFoundPage() {
-  return <Loading><NotFound /></Loading>
+  return <NotFound />
 }
 export function NowPreview() {
-  return <Loading><Now /></Loading>
+  return <Now />
 }
 export function CampusPreview() {
-  return <Loading><Campus /></Loading>
+  return <Campus />
 }

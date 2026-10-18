@@ -1,202 +1,54 @@
-/* 지원 안내: 지금 상태 · 지난 모집 · 자주 묻는 질문 · 연락 */
+/* 지원 안내: 머리(모집 상태) 글자 · 행동 (섹션 안 조각은 recruits/recruit.module.css) */
 
-/* ── 지금 상태 ── */
-.status {
-  display: grid;
-  justify-items: start;
-  gap: 28px;
-}
-.message {
-  max-width: 38em;
-  font: var(--t-body);
-  color: var(--ink-900);
+/* 머리 리드: 문장 하나에 한 줄씩 (지난 모집 시기 / 공지 채널) */
+.leadLine {
+  display: block;
 }
 
-/* ── 지난 모집 ── */
-.steps {
-  margin-top: 56px;
-  border-top: 1px solid var(--ink-900);
+/* 제목 뒷부분('10.25 마감'): 넓은 화면은 다음 줄 (가운뎃점이 줄 끝에 매달리지 않게), 폰은 ' · ' 로 이어서 */
+.titleSub {
+  white-space: nowrap;
 }
-.step {
-  display: grid;
-  grid-template-columns: 10em minmax(0, 1fr);
-  grid-template-areas:
-    'label when'
-    'label note'
-    'label source';
-  column-gap: 24px;
-  row-gap: 2px;
-  padding: 15px 0 14px;
-  border-bottom: 1px solid var(--line);
+@media (min-width: 768px) {
+  .titleSep {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .titleSub {
+    display: block;
+  }
 }
-.stepLabel {
-  grid-area: label;
-  font: 600 17px/26px var(--font-kr);
-}
-.stepWhen {
-  grid-area: when;
-  font-size: 15px;
-  line-height: 26px;
-  font-weight: 500;
-  color: var(--ink-900);
-}
-.days {
-  margin-left: 12px;
-  font: var(--t-meta);
-  color: var(--ink-700);
-}
-.stepNote {
-  grid-area: note;
-  font: var(--t-meta);
-  color: var(--ink-900);
-}
-.stepSource {
-  grid-area: source;
-  font: var(--t-meta);
-  color: var(--ink-700);
-}
-.source {
-  color: var(--ink-700);
-}
-/* 작은 글자 안의 출처 링크도 누르는 높이는 24 이상 */
-.source a {
+
+/* 열리기까지 · 마감까지 남은 날: 리드 첫 줄 앞의 먹색 꼬리표 (soon · open 일 때만) */
+.dday {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-}
-
-/* ── 자주 묻는 질문 ── */
-.faq {
-  border-top: 1px solid var(--ink-900);
-}
-.faq > li {
-  border-bottom: 1px solid var(--line);
-}
-.qa summary {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  min-height: 60px;
-  padding: 14px 0;
-  cursor: pointer;
-  list-style: none;
-}
-.qa summary::-webkit-details-marker {
-  display: none;
-}
-.q {
-  flex: 1;
-  font: 600 17px/26px var(--font-kr);
-}
-.qa summary:hover .q {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-}
-/* 더하기 → 빼기 */
-.sign {
-  position: relative;
-  flex: none;
-  width: 14px;
-  height: 14px;
-}
-.sign::before,
-.sign::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 6px;
-  height: 2px;
+  height: 28px;
+  margin-bottom: 8px;
+  padding: 0 10px;
+  border-radius: var(--r-tag);
   background: var(--ink-900);
-  transition: transform var(--dur-open) var(--ease);
-}
-.sign::after {
-  transform: rotate(90deg);
-}
-.qa[open] .sign::after {
-  transform: rotate(0deg);
-}
-.a {
-  max-width: 38em;
-  padding: 0 0 20px;
-  color: var(--ink-700);
-}
-.aSource {
-  margin-top: 8px;
-  font: var(--t-meta);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--paper);
 }
 
-/* ── 연락 ── */
-.contact {
-  border-top: 1px solid var(--ink-900);
-}
-.contact > div {
-  display: grid;
-  grid-template-columns: 8.5em minmax(0, 1fr);
-  column-gap: 24px;
-  align-items: baseline;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-}
-.contact dt {
-  font: 600 15px/24px var(--font-kr);
-  color: var(--ink-700);
-}
-.contact dd {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 20px;
-  margin: 0;
-  min-height: 44px;
-}
-.email {
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 28px;
-  user-select: all;
-  -webkit-user-select: all;
-}
-.contact dd :global(.link) {
-  min-height: 44px;
-}
-.contactNote {
-  font: var(--t-meta);
-  color: var(--ink-700);
+/* 주 버튼 + 두 번째 버튼('친구에게 알려 주기'). 머리의 기준 줄(meta) 자리에 들어간다. 줄 모양은 전역 .btn-row */
+.actions {
+  margin-top: 12px;
 }
 
 @media (max-width: 767px) {
-  .status {
-    gap: 24px;
+  .actions {
+    margin-top: 4px;
   }
-  .status :global(.btn-primary) {
-    width: 100%;
-  }
-  .steps {
-    margin-top: 48px;
-  }
-  .step {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'label'
-      'when'
-      'note'
-      'source';
-  }
-  .contact > div {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 0;
-    padding: 12px 0 4px;
-  }
-  .contact dd {
-    min-height: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sign::before,
-  .sign::after {
-    transition: none;
+  /* '친구에게 알려 주기' 버튼은 ShareAction 의 display: contents 안에 있어 .btn-row 의 바로 아래가 아니다 */
+  .actions :global(.btn-secondary) {
+    flex: 1 1 100%;
   }
 }

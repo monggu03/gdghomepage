@@ -2,8 +2,11 @@ import { useId, type CSSProperties, type ReactNode } from 'react'
 import s from './pages.module.css'
 
 /**
- * 하위 페이지 공통 조각 (docs/DESIGN.md 5장: 12칸, 섹션 머리 1–3칸 · 내용 4–12칸).
- * 페이지는 머리말 · 꼬리말 없이 본문만 그린다 (AppLayout 이 감싼다).
+ * 하위 페이지 공통 조각 (docs/DESIGN.md 5장).
+ * 섹션은 두 가지다.
+ * - 이야기 섹션: 이름표 → 주장 제목(48) → 한 줄 → 12칸 내용. 면(흰 · 옅은 회색 · 먹색)으로 나눈다 → common/StorySection
+ * - 참고 섹션(여기 Section): FAQ · 일정 목록 · 지원 과정 · 기록. 1px 괘선 + 28px 제목, 섹션 사이 96
+ * 페이지는 머리말 · 꼬리말 없이 본문만 그리고(AppLayout 이 감싼다), 맨 끝에 common/JoinStrip 을 직접 넣는다 (/recruits 제외).
  */
 
 /** 장소 표식: 8px 네모 */
@@ -12,8 +15,8 @@ export function Mark({ color }: { color: string }) {
 }
 
 /**
- * 페이지 머리: 장소 표식 + 부제 / h1 / 리드 / 기준 줄.
- * 넓은 화면에서는 h1 과 리드를 같은 기준선에 놓아, 리드가 아래 섹션 내용과 같은 칸(4칸)에서 시작한다.
+ * 페이지 머리 (건물 장면이 없는 페이지: 오류 · 찾을 수 없음 · 관리자): 장소 표식 + 부제 / h1 / 리드 / 기준 줄.
+ * 건물이 있는 장소 페이지는 placehero/PlaceHero 를 쓴다.
  * wide: 제목이 긴 페이지(오류 등)는 제목을 넓게 쓰고 리드를 그 아래에 둔다.
  */
 export function PageHead({
@@ -44,30 +47,41 @@ export function PageHead({
   )
 }
 
-/** 섹션: 왼쪽 3칸에 제목 + 한 줄, 오른쪽 9칸에 내용. 폰 · 태블릿은 위아래로 쌓는다 */
+/**
+ * 참고 섹션: 1px 괘선 + 제목(28) + 한 줄 설명, 섹션 사이 96 (폰 64).
+ * head: top(기본) = 머리를 위에, 내용은 12칸 전체 (일정 줄 · 단계 그림처럼 넓은 내용)
+ *       side = 머리는 왼쪽 3칸, 내용은 4–12칸 (FAQ · 짧은 목록). 1023 이하에서는 위아래로 쌓는다
+ * aside: 머리 오른쪽 끝(side 면 설명 아래)에 붙는 짧은 것 (거르기 · 작은 숫자).
+ * quiet: 마지막 짧은 안내처럼 덜 중요한 섹션 (제목 한 단계 작게).
+ * 이야기 섹션(주장 제목 48 · 면)은 common/StorySection 을 쓴다.
+ */
 export function Section({
   id,
   title,
   desc,
-  sticky = false,
+  aside,
+  head = 'top',
   quiet = false,
   children,
 }: {
   id: string
   title: ReactNode
   desc?: ReactNode
-  /** 긴 목록 옆에서 섹션 제목을 붙여 둔다 (넓은 화면만) */
-  sticky?: boolean
+  aside?: ReactNode
+  head?: 'top' | 'side'
   /** 마지막 짧은 안내처럼 덜 중요한 섹션 */
   quiet?: boolean
   children: ReactNode
 }) {
   const titleId = `${id}-title`
   return (
-    <section id={id} className={`${s.section} ${quiet ? s.sectionQuiet : ''}`} aria-labelledby={titleId}>
-      <div className={`${s.sectionHead} ${sticky ? s.sticky : ''}`}>
-        <h2 id={titleId}>{title}</h2>
-        {desc && <p>{desc}</p>}
+    <section id={id} className={`${s.section} ${head === 'side' ? s.sectionSide : ''} ${quiet ? s.sectionQuiet : ''}`} aria-labelledby={titleId}>
+      <div className={s.sectionHead}>
+        <div className={s.sectionTitle}>
+          <h2 id={titleId}>{title}</h2>
+          {desc && <p>{desc}</p>}
+        </div>
+        {aside && <div className={s.sectionAside}>{aside}</div>}
       </div>
       <div className={s.sectionBody}>{children}</div>
     </section>

@@ -1,22 +1,38 @@
 /*
- * GDGoC DGU 디자인 토큰 — '캠퍼스 안내판' (docs/DESIGN.md)
- * 색은 '어디'를 뜻한다: 장소색은 지도 지붕 · 장소 표식 · 일정 표식에만.
+ * GDGoC DGU 디자인 토큰 — '캠퍼스 안내판' · 시안 E '지도는 표지, 나머지는 전시장' (docs/DESIGN.md)
+ * 색은 '어디'를 뜻한다: 장소색은 지도 지붕 · 장소 표식(이름표 네모) · 일정 표식에만.
  * 기수색(주황)은 '지금 기수' 표시에만, 그 위 글자는 ink-900.
+ * 면은 세 가지뿐: 흰(--paper) · 옅은 회색(--field) · 먹색(--band-bg). 섹션 단위로만 칠한다.
  * 밝은 화면 하나로 고정한다 (다크 모드를 따라가지 않음, 팀 결정 2026-10-16).
  */
-:root {
-  color-scheme: light;
 
+/*
+ * 글자 · 선 단계는 :root 와 .on-light 에 같이 둔다.
+ * 먹색 면(.on-dark)은 이 단계를 흰 쪽으로 바꿔 끼우고(global.css), 그 안에 다시 놓인 흰 판(일정 표 등)은 .on-light 로 되돌린다.
+ */
+:root,
+.on-light {
   /* 바탕 · 선 */
   --paper: #ffffff;
-  --subtle: #f6f7f8;
+  --subtle: #f6f7f8; /* hover · 누름 면 전용 (섹션 면은 --field) */
   --line: #e4e6e9;
   --line-strong: #c9cdd2;
 
-  /* 글자 (ink-500 보다 옅은 글자는 쓰지 않는다: 흰 바탕 4.7:1) */
+  /* 글자 (ink-500 보다 옅은 글자는 쓰지 않는다: 흰 5.8:1 · --field 위 5.2:1) */
   --ink-900: #191b1f;
   --ink-700: #474c55;
-  --ink-500: #6e737c;
+  --ink-500: #61666f;
+
+  /* 포커스 링: 밝은 면은 파랑, 먹색 면은 #8AB4F8 (8.2:1) */
+  --focus: #4285f4;
+}
+
+:root {
+  color-scheme: light;
+
+  /* 면 (섹션 단위). 옅은 회색 면 위 ink-900 15.6:1 · ink-700 7.8:1 · ink-500 5.2:1 */
+  --field: #f2f4f6;
+  --field-line: #e3e6ea; /* 옅은 면 위 1px 안쪽 선 · 그림 타일 테두리 */
 
   /* 장소색 = 구글 4색. 글자 · 테두리 · 면에는 쓰지 않는다 */
   --g-blue: #4285f4;
@@ -27,44 +43,57 @@
   --place-projects: var(--g-red);
   --place-teams: var(--g-yellow);
   --place-recruits: var(--g-green);
-  --place-about: var(--ink-900);
+  --place-about: #191b1f;
 
   /* 기수색: 4기 주황. '지금 기수' 표시에만 */
   --gen: #ff6309;
   --on-gen: #191b1f;
 
-  /* 떠 있는 것(지도 미리보기 · 바텀시트 · 검색 창)에만 */
+  /* 떠 있는 것(지도 미리보기 · 바텀시트 · 검색 창 · 겹친 폰 화면)에만 */
   --shadow-float: 0 12px 32px rgba(25, 27, 31, 0.14);
 
   /* 글꼴: 한글 문장은 Pretendard, 숫자 덩어리 · 영문 워드마크만 Google Sans Flex */
   --font-kr: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-num: 'Google Sans Flex', 'Pretendard Variable', Pretendard, sans-serif;
 
-  /* 글자 크기/줄 높이 (폰은 아래 미디어 쿼리에서 바뀐다) */
-  --t-display: 800 56px/72px var(--font-kr);
-  --t-h1: 700 40px/52px var(--font-kr);
-  --t-h2: 700 28px/38px var(--font-kr);
-  --t-h3: 700 20px/30px var(--font-kr);
-  --t-lead: 400 20px/34px var(--font-kr);
+  /*
+   * 글자 크기/줄 높이 (DESIGN 3장 표). 폭에 따라 아래 미디어 쿼리에서 바뀐다.
+   * 84(--t-hero) → 64(display) → 48(section) → 28(h2) 로 단계를 둔다. 40(--t-h1)은 예전 화면용으로만 남긴다.
+   */
+  --t-display: 800 64px/76px var(--font-kr); /* 하위 페이지 h1 · 먹색 띠 주장 */
+  --t-section: 700 48px/60px var(--font-kr); /* 이야기 섹션 주장 제목 */
+  --t-h1: 700 40px/52px var(--font-kr); /* (예전) 참고 화면 제목. 새 화면은 --t-section */
+  --t-h2: 700 28px/38px var(--font-kr); /* 참고 섹션 제목 · 묶음 제목 */
+  --t-h3: 700 20px/30px var(--font-kr); /* 항목 제목 */
+  --t-lead: 400 20px/32px var(--font-kr); /* 제목 아래 한 줄 */
   --t-body: 400 17px/28px var(--font-kr);
-  --t-ui: 600 15px/22px var(--font-kr);
-  --t-meta: 500 13px/20px var(--font-kr);
-  --t-num: 600 64px/64px var(--font-num);
-  --ls-display: -0.025em;
+  --t-ui: 600 15px/22px var(--font-kr); /* 버튼 · 메뉴 */
+  --t-eyebrow: 600 15px/22px var(--font-kr); /* 장소 이름표 (색은 ink-700) */
+  --t-meta: 500 13px/20px var(--font-kr); /* 하한: 13px 미만 한글 금지 */
+  --t-num: 600 88px/88px var(--font-num); /* 큰 숫자 (한 화면에 한 묶음) */
+  --t-num-m: 600 40px/44px var(--font-num); /* 일정 표 날짜 · 전시실 연도 */
+  --ls-display: -0.03em;
+  --ls-section: -0.028em;
   --ls-h1: -0.02em;
   --ls-h2: -0.015em;
   --ls-h3: -0.01em;
+  --ls-num: -0.03em;
+  --ls-num-m: -0.02em;
 
   /* 모양 */
-  --r-tag: 4px;
-  --r-control: 8px;
-  --r-card: 12px;
+  --r-tag: 6px; /* 태그 */
+  --r-control: 12px; /* 버튼 · 입력 · 거르기 */
+  --r-card: 16px; /* 글자 카드 · 표 · 판 */
+  --r-media: 20px; /* 그림 타일 · 일정 표 */
+  /* 아이콘 타일은 정사각 기준 border-radius: 24% (common/IconTile) */
 
   /* 간격: 묶음 안 / 묶음 사이 / 섹션 사이 */
   --gap-in: 12px;
   --gap-group: 40px;
   --gap-section: 144px;
-  --gap-section-near: 96px;
+  --gap-section-near: 96px; /* 참고 섹션 (괘선 + 왼쪽 3칸 머리) 사이 */
+  --story-pad: 136px; /* 이야기 섹션 위아래 안쪽 여백 */
+  --head-gap: 56px; /* 섹션 머리 → 내용 */
 
   /* 격자 */
   --max: 1200px;
@@ -77,9 +106,19 @@
   --dur-hover: 120ms;
   --dur-open: 200ms;
   --dur-sheet: 320ms;
+  /* 누름: 버튼이 눌리는 정도와 시간 (되돌아올 때 튕기지 않는다) */
+  --press: 0.98;
+  --dur-press: 80ms;
+  /* 닫힘은 열림보다 빠르게 (나가는 것은 눈길을 끌지 않게) */
+  --dur-close: 140ms;
+  /* 그림 hover 확대: 천천히, 아주 조금 */
+  --dur-media: 480ms;
+  --media-zoom: 1.03;
+  /* 페이지 전환 (View Transitions) */
+  --dur-page-out: 120ms;
+  --dur-page-in: 240ms;
 
   /* 지도 (campus) */
-  --scene-ground: #f4f6f8;
   --scene-grass: #e4f2e8;
   --scene-grass-line: #d2e8d9;
   --scene-walk: #ebeef2;
@@ -89,42 +128,93 @@
   --wall-left: #eef0f2;
   --wall-right: #dadde1;
 
-  /* ── 예전 이름 (아직 바꾸지 않은 화면용 별칭) ── */
+  /* 예전 이름: 지도 · 장소 설정(config/places.ts)이 아직 '--ink' 로 부른다 */
   --ink: var(--ink-900);
-  --ink-body: var(--ink-700);
-  --ink-sub: var(--ink-500);
-  --hair: var(--line);
-  --chip: var(--subtle);
-  --bg: var(--paper);
-  --surface: var(--paper);
-  --surface-solid: var(--paper);
-  --font-display: var(--font-num);
-  --gen4-orange: var(--gen);
-  --on-orange: var(--on-gen);
-  --radius-card: var(--r-card);
-  --radius-pill: 999px;
-  --gutter-l: var(--side);
-  --gutter-r: var(--side-r);
 }
 
 @media (max-width: 1279px) {
   :root {
+    --t-display: 800 56px/68px var(--font-kr);
+    --t-section: 700 44px/56px var(--font-kr);
     --gap-section: 120px;
+  }
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --t-section: 700 40px/52px var(--font-kr);
+    --t-num: 600 72px/72px var(--font-num);
+    --story-pad: 104px;
+    --head-gap: 44px;
   }
 }
 
 @media (max-width: 767px) {
   :root {
-    --t-display: 800 32px/42px var(--font-kr);
+    --t-display: 800 36px/46px var(--font-kr);
+    --t-section: 700 30px/40px var(--font-kr);
     --t-h1: 700 26px/36px var(--font-kr);
-    --t-h2: 700 21px/30px var(--font-kr);
+    --t-h2: 700 22px/32px var(--font-kr);
     --t-h3: 700 18px/27px var(--font-kr);
     --t-lead: 400 17px/28px var(--font-kr);
     --t-body: 400 16px/26px var(--font-kr);
-    --t-num: 600 44px/44px var(--font-num);
+    --t-num: 600 56px/56px var(--font-num);
+    --t-num-m: 600 30px/34px var(--font-num);
     --gap-section: 88px;
     --gap-section-near: 64px;
+    --story-pad: 72px;
+    --head-gap: 28px;
     --side: max(20px, env(safe-area-inset-left, 0px));
     --side-r: max(20px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/*
+ * ── 홈 첫 화면 · 먹색 면 ──
+ * --t-hero 는 홈 첫 화면 h1 하나에만 쓴다.
+ * --band-* 는 먹색 면(홈 띠 · /projects G-Sprint 띠 · /community 이번 주 · 꼬리말)이 쓴다. 한 페이지에 먹색 면은 하나(꼬리말 제외).
+ */
+:root {
+  /* 첫 화면 h1: 한 문장이 화면의 주인공. 자간은 -0.03em 까지만 */
+  --t-hero: 800 84px/96px var(--font-kr);
+  --ls-hero: -0.03em;
+
+  /* 먹색 면 (먹색 바탕 위 흰색 · 회색 단계). band-ink-3 도 바탕과 6.6:1 */
+  --band-bg: #191b1f;
+  --band-ink: #ffffff;
+  --band-ink-2: #c9cdd3; /* 10.8:1 */
+  --band-ink-3: #9ba0a8; /* 6.6:1, 먹색 위 가장 옅은 글자 */
+  --band-line: #33373e;
+  --band-raise: #2b2e34; /* 먹색 위 두 번째 버튼 면 (흰 글자 13.6:1) */
+}
+
+@media (max-width: 1279px) {
+  :root {
+    --t-hero: 800 72px/84px var(--font-kr);
+  }
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --t-hero: 800 60px/72px var(--font-kr);
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --t-hero: 800 38px/50px var(--font-kr);
+  }
+}
+
+/* 넓지만 낮은 화면(1280×720 노트북): 첫 화면에서 지도가 조금 더 보이게 */
+@media (min-width: 1024px) and (max-height: 780px) {
+  :root {
+    --t-hero: 800 76px/86px var(--font-kr);
+  }
+}
+
+@media (max-width: 359px) {
+  :root {
+    --t-hero: 800 33px/44px var(--font-kr);
   }
 }

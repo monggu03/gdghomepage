@@ -35,12 +35,13 @@ export const PLACES: readonly Place[] = [
     footprint: { x: 9.7, y: 0.9, w: 3.4, d: 3.2, h: 1.25, door: 'L', roof: 'saw', pinGap: 1.05 },
   },
   {
+    // '팀원 모집' 은 동아리 모집으로 읽혀서(2026-10 점검) 멤버끼리 팀을 찾는 게시판이라는 뜻이 드러나게 '팀원 찾기'
     id: 'teams',
-    label: '팀원 모집',
-    sub: '스터디 · 프로젝트 · 공모전',
+    label: '팀원 찾기',
+    sub: '멤버끼리 팀 꾸리기',
     path: '/teams',
     color: '#fbbc04',
-    description: '스터디 · 프로젝트 · 공모전을 같이할 팀원을 모읍니다.',
+    description: '멤버끼리 스터디 · 프로젝트 · 공모전 팀원을 찾는 게시판입니다. 아직 준비 중이고, 동아리 지원은 지원 안내에서 합니다.',
     footprint: { x: 0.9, y: 9.7, w: 3.4, d: 3.4, h: 0.95, door: 'R', roof: 'arch', pinGap: 0.7 },
   },
   {
@@ -58,8 +59,21 @@ export const PLACE_BY_ID: Readonly<Record<PlaceId, Place>> = Object.fromEntries(
   PLACES.map((p) => [p.id, p]),
 ) as Record<PlaceId, Place>
 
-/** 상단 메뉴 순서 (배범서 기획 순서: Home · Projects · Teams · Community · Recruits) */
-export const NAV_ORDER: readonly PlaceId[] = ['about', 'projects', 'teams', 'community', 'recruits']
+/**
+ * 메뉴 순서: 둘러보기(홈 · 프로젝트 · 커뮤니티) → 지원 안내 → 아직 열지 않은 팀원 찾기.
+ * 처음 온 사람이 '무엇을 하는지 → 어떻게 들어가는지' 순서로 읽게 하고, 준비 중인 게시판은 맨 끝에 둔다.
+ * (배범서 기획 순서 Home · Projects · Teams · Community · Recruits 에서 바꿈: 2026-10 점검에서
+ *  지원 안내 앞의 '팀원 모집' 을 동아리 모집으로 잘못 누르는 일이 있었다)
+ * 머리말 · 폰 메뉴에서는 지원 안내를 메뉴 줄 대신 오른쪽 '지원 안내' 버튼(APPLY_PLACE)으로 보인다.
+ */
+export const NAV_ORDER: readonly PlaceId[] = ['about', 'projects', 'community', 'recruits', 'teams']
+
+/** 머리말 오른쪽 · 폰 메뉴 아래에 늘 보이는 지원 행동이 가리키는 장소 */
+export const APPLY_PLACE: PlaceId = 'recruits'
+
+/** 아직 열지 않은 장소: 메뉴 이름 옆에 작은 '준비 중' 표시를 붙인다 */
+export const SOON_PLACES: ReadonlySet<PlaceId> = new Set<PlaceId>(['teams'])
+export const SOON_LABEL = '준비 중'
 
 /** 메뉴에 보이는 이름: 소개 장소는 메뉴에서 '홈' */
 export const navLabel = (id: PlaceId) => (id === 'about' ? '홈' : PLACE_BY_ID[id].label)

@@ -11,7 +11,7 @@ const SEGMENTS = 12
  * 아치 지붕 + 끝 벽 아치 창: 여럿이 모이는 체육관 · 행사장 느낌.
  * 지붕만 장소색이고 끝 벽은 오른쪽 벽과 같은 중립색이다.
  */
-export function ArchRoof({ fp, color, top }: RoofProps) {
+export function ArchRoof({ fp, color, top, glass = GLASS }: RoofProps) {
   const { x, y, w, d } = fp
   const R = d / 2
   const yc = y + R
@@ -61,7 +61,7 @@ export function ArchRoof({ fp, color, top }: RoofProps) {
       {strips}
       {ribs}
       <Poly className={`${s.wallR} ${s.edge}`} pts={endWall} />
-      <Poly pts={archWindow} fill={GLASS.R} className={s.edge} />
+      <Poly pts={archWindow} fill={glass.R} data-glass="R" className={s.edge} />
     </>
   )
 }

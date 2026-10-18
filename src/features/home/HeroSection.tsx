@@ -1,18 +1,17 @@
-import { useCallback, useRef, type KeyboardEvent, type MouseEvent } from 'react'
+import { Fragment, useCallback, useMemo, useRef, type KeyboardEvent, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { SITE } from '@/config/site'
-import { useSchedule } from '@/data/queries'
+import { SPRINT } from '@/config/site'
+import { recruitStatus } from '@/content/recruitingStatus'
+import { HERO } from '@/content/story'
 import { CampusScene } from '@/features/campus/CampusScene'
 import { useSceneFit, type SceneLayout } from '@/features/campus/useSceneFit'
 import { usePlacePreview, usePlacePreviewState } from '@/features/layout/placePreview'
 import { useIsNarrow, useMediaQuery } from '@/hooks/useMediaQuery'
 import { useOffscreen } from '@/hooks/useOffscreen'
 import { useToday } from '@/hooks/useToday'
-import { ddayLabel } from '@/lib/date'
-import { dayLabel, nextEvent, sentences } from './homeData'
+import { isAfter } from './homeData'
 import { PLACE_TRIGGER, PlacePopover } from './PlacePopover'
-import { PlaceLegend } from './PlaceLegend'
-import { scrollToSection } from './scrollTo'
+import { RecruitStatus } from './RecruitStatus'
 import s from './hero.module.css'
 
 export const PHONE_QUERY = '(max-width: 767px)'
@@ -21,36 +20,22 @@ export const PHONE_QUERY = '(max-width: 767px)'
 const BOTTOM_BAND = 48
 
 /**
- * 다음 일정 한 덩어리: 이름 · D-n · 날짜와 제목. h1 과 같은 줄 오른쪽에 둔다.
- * 일정을 받기 전에도 자리(min-height)를 잡아 두어 받은 뒤에 화면이 밀리지 않는다.
- * 멤버 수는 '기록' 섹션의 한 줄이 기준과 함께 맡는다.
- */
-function NextUp() {
-  const today = useToday()
-  const { data, isPending } = useSchedule()
-  const next = data ? nextEvent(data, today) : null
-  return (
-    <div className={s.next} data-pending={isPending || undefined}>
-      {next && (
-        <p className={s.nextEvent}>
-          <span className={s.nextLabel}>다음 일정</span>
-          <span className={`num ${s.dday}`}>{ddayLabel(next.date, today)}</span>
-          <span className={s.nextTitle}>
-            <span className="num">{dayLabel(next.date, today)}</span> · {next.title}
-          </span>
-        </p>
-      )}
-    </div>
-  )
-}
-
-/**
- * 첫 화면: 한 줄 소개(h1) | 다음 일정 → 소개 글 · 행동 → 지도(화면 끝까지) → 장소 범례.
- * 지도 위에는 아무것도 얹지 않는다. 건물을 누르면 그 자리에서 미리보기가 열린다 (폰은 아래 시트).
+ * 첫 화면: 큰 한 문장(h1) | 5기 모집 상태 → 소개 한 문장 · 주 버튼 + 두 번째 버튼 → 지도(화면 끝까지).
+ * 지도 위에는 아무것도 얹지 않는다. 건물 · 이름표를 누르면(키보드는 건물에서 Enter · Space) 그 자리에서 미리보기가 열린다 (폰은 아래 시트).
+ * 장소 이름을 글자로 나열한 범례는 두지 않는다: 머리말 메뉴 · 폰 메뉴가 같은 장소를 이미 글자로 준다.
+ * 행동은 주 버튼 하나 + 두 번째 버튼 하나. 모집 상태를 따른다:
+ * 모집 중이고 지원서 주소가 있으면 '지원서 쓰기 ↗' + '지원 안내 보기', 아니면 '지원 안내 보기' + '{gen}기 소식 받기 ↗'.
  */
 export function HeroSection() {
   const narrow = useIsNarrow()
   const phone = useMediaQuery(PHONE_QUERY)
+  const today = useToday()
+  // G-Sprint 데모데이 다음 날부터 h1 을 지난 일로
+  const done = isAfter(today, SPRINT.demoDay)
+  const lines = done ? HERO.title.after : HERO.title.before
+  // 모집 상태는 날짜로 계산한다 (오늘이 바뀌면 다시)
+  const status = useMemo(() => recruitStatus(today), [today])
+  const applyNow = status.state === 'open' && Boolean(status.applyUrl)
   const preview = usePlacePreview()
   // 미리보기가 열렸을 때만 고른 장소의 안내판을 뒤집는다 (처음 들어왔을 때는 모두 흰 판)
   const { open: previewOpen } = usePlacePreviewState()
@@ -77,41 +62,46 @@ export function HeroSection() {
   return (
     <section className={s.hero} aria-labelledby="hero-title">
       <div className={`container ${s.top}`}>
-        {/* 뜻으로 끊는다: 좁아지면 묶음(phrase) 사이에서만 줄이 바뀐다 */}
+        {/* 뜻으로 끊는다: 넓은 화면에서는 묶음마다 한 줄, 폰에서는 묶음 사이에서만 줄이 바뀐다 */}
         <h1 id="hero-title" className={s.title}>
-          <span className={s.phrase}>화요일마다 모여 배우고,</span>
-          <br />
-          <span className={s.phrase}>12월엔 직접 만든</span> <span className={s.phrase}>서비스를 배포합니다.</span>
+          {lines.map((line, i) => (
+            <Fragment key={line}>
+              {i > 0 && ' '}
+              <span className={s.phrase}>{line}</span>
+            </Fragment>
+          ))}
         </h1>
+        {/* 예전 D-day 자리: 지원자가 가장 먼저 궁금한 '지금 지원할 수 있나' */}
+        <RecruitStatus status={status} className={s.status} />
         <div className={s.intro}>
-          <p className={s.lead}>
-            {sentences(SITE.pitch).map((line) => (
-              <span key={line} className={s.sentence}>
-                {line}{' '}
-              </span>
-            ))}
-          </p>
-          {/* 주 버튼은 하나: 지금 확정된 4기 일정. 5기 모집은 아직 미정이라 보조 링크로 */}
-          <div className={s.actions}>
-            <a
-              className="btn-primary"
-              href="#now"
-              onClick={(e) => {
-                e.preventDefault()
-                scrollToSection('now')
-              }}
-            >
-              {SITE.generation} 일정 보기
-            </a>
-            <Link className="link" to="/recruits">
-              5기 모집 안내
-            </Link>
+          <p className={s.lead}>{HERO.pitch}</p>
+          {/* 주 버튼 하나 + 두 번째 버튼 하나 (DESIGN 7장). 폰에서는 둘 다 한 줄 가득 (.btn-row) */}
+          <div className={`btn-row ${s.actions}`}>
+            {applyNow ? (
+              <a className="btn-primary" href={status.applyUrl} target="_blank" rel="noreferrer">
+                지원서 쓰기<span aria-hidden="true">↗</span>
+                <span className="visually-hidden"> (새 창)</span>
+              </a>
+            ) : (
+              <Link className="btn-primary" to="/recruits">
+                지원 안내 보기
+              </Link>
+            )}
+            {applyNow ? (
+              <Link className="btn-secondary" to="/recruits">
+                지원 안내 보기
+              </Link>
+            ) : (
+              <a className="btn-secondary" href={status.channelUrl} target="_blank" rel="noreferrer">
+                {status.generation}기 소식 받기<span aria-hidden="true">↗</span>
+                <span className="visually-hidden"> (인스타그램, 새 창)</span>
+              </a>
+            )}
           </div>
         </div>
-        <NextUp />
       </div>
 
-      {/* 지도는 화면 끝까지. 안의 건물이 키보드로 고를 수 있는 버튼이고, 아래 범례가 같은 메뉴를 글자로 준다 */}
+      {/* 지도는 화면 끝까지. 안의 건물 · 광장 깃발이 키보드로 고를 수 있는 버튼이다 (Tab → Enter · Space) */}
       <div ref={frameRef} className={s.map} data-paused={offscreen || undefined} onClick={onMapClick} onKeyDown={onMapKey}>
         <CampusScene
           svgRef={svgRef}
@@ -124,7 +114,6 @@ export function HeroSection() {
         />
         <PlacePopover frameRef={frameRef} sheet={phone} />
       </div>
-      <PlaceLegend />
     </section>
   )
 }

@@ -13,6 +13,8 @@
 | 검색 방법 (키워드 → Gemini) | `services/search/`, `SearchService` | Strategy |
 | 건물 지붕 모양 | `features/campus/roofs/` | Strategy + Registry |
 | 지도 놓을 자리 | `features/home/HeroSection.tsx` 의 `getLayout` | 배치와 장면 분리 |
+| 하위 페이지 머리 장면 · 건물 상태 | `features/placehero/` (`frame.ts` 자리, `look.ts` 상태) | 같은 장면을 다른 viewBox 로, 상태는 데이터에서 계산 |
+| 프로젝트 그림 · GitHub 숫자 | `content/projects.json` 의 `cover` · `images` · `languages` … | 내용과 코드 분리 |
 | 아직 안 만든 페이지 | `config/pages.ts` → 라우터가 자동 연결 | 설정에서 라우트 만들기 |
 
 ## 1. 지도 = 메뉴 (데이터 주도 설정)
@@ -74,7 +76,7 @@ flowchart LR
 
 ## 7. 순수 로직은 lib/ 로, 테스트와 함께
 
-날짜(D-n, 달력), 일정 정렬 · 기간 표시, 아이소메트릭 투영, 장면 맞추기, 검색 점수, 사람 경로, G-Sprint 진행률은 DOM 없이 계산합니다.
+날짜(D-n, 달력), 일정 정렬 · 기간 표시, 아이소메트릭 투영, 장면 맞추기, 검색 점수, 사람 경로, 글자 다듬기(하이픈 낱말이 꺾이지 않게, `lib/text.ts`)는 DOM 없이 계산합니다.
 그래서 `npm test` 로 바로 확인할 수 있고, 화면 코드는 짧아집니다.
 
 ## 8. 1초에 30번 움직이는 것은 React 밖에서
@@ -110,28 +112,50 @@ flowchart LR
 - 받는 동안 머리말 · 꼬리말은 그대로 두고 본문 자리 높이만 잡아 둡니다.
 - 파일 하나로 묶어야 하는 미리보기(아티팩트)는 `VITE_SINGLE_FILE=1` 로 다시 한 파일로 합칩니다.
 
-## 12. 접근성에서 지킨 것
+## 12. 하위 페이지는 '그 건물 앞'에서 시작한다 (PlaceHero)
+
+홈 지도에서 건물을 누르고 들어오면, 하위 페이지도 같은 건물 앞에서 시작해야 같은 장소로 느껴집니다.
+
+- 장면을 새로 그리지 않습니다. 홈 지도와 같은 격자 · 좌표 · 부품(`campus/StaticBuilding.tsx` 는 `Building` 과 같은 조각을 쓰되 누르기만 뺀 것)을 쓰고, `placehero/frame.ts` 가 viewBox 만 그 건물 쪽으로 옮깁니다. 지도를 고치면 머리도 같이 바뀝니다.
+- 건물 상태는 `placehero/look.ts` 가 실제 데이터에서 정합니다: G-Sprint 기간(`config/site.ts` 의 `SPRINT`)이면 창에 불, 모집이 열렸는지(`content/recruiting.json`)에 따라 문, 팀원 모집은 공사 중. 화면 코드에 날짜를 적지 않습니다.
+- 안내판(목차)은 HTML 이고 장면은 `aria-hidden` 입니다. 화면 읽기 프로그램은 제목 · 리드 · 안내판 링크만 읽습니다.
+- 꼬리말의 작은 지도(`campus/MiniCampus.tsx`)도 같은 부품으로, 지금 주소의 건물만 장소색으로 칠합니다.
+
+## 13. 하위 페이지의 계산은 화면 밖에서
+
+- 커뮤니티 '이번 주'(`pages/community/thisWeek.ts`), '세 기수의 1년' 달력(`heatmap.ts`), 기록 묶기(`archive.ts`), 지원 안내 한 해 · 네 파트(`pages/recruits/batches.ts` · `parts.ts`), 프로젝트 전시실 묶기 · 표지 고르기(`pages/projects/exhibit.ts`), G-Sprint 띠 단계 · 주장(`pages/projects/sprint.ts`)은 DOM 없이 계산하고 테스트합니다.
+- 프로젝트 자세히 보기 창은 브라우저 기본 `<dialog>` 이고, 열린 프로젝트를 주소 `?p=<id>` 에 남겨 링크로 공유됩니다. 라우터를 건드리지 않고 검색 매개변수만 씁니다.
+- 프로젝트 그림은 `teamCleared` 로 팀 확인 여부를 들고 다닙니다. `SHOW_UNCLEARED_IMAGES` 하나로 '확인된 그림만'으로 바꿀 수 있습니다.
+
+## 14. 접근성에서 지킨 것
 
 - 검색: 콤보박스(↓↑ 이동, Enter 열기, Esc 닫기 → 지우기), 결과 건수를 화면 읽기 프로그램에 알림. 고르면 초점이 미리보기 제목으로
 - 지도 건물 · 깃발: 키보드로 고를 수 있고, 미리보기를 닫으면 초점이 그 건물로 돌아옴 (`data-place`)
 - 고른 장소는 `aria-current`, 미리보기를 `aria-controls` 로 가리킴. 범례가 같은 메뉴를 글자로 한 번 더 제공
 - 달력: 표(table)로 읽힘. 날짜 칸마다 'O월 O일'
 - 누르는 것은 44px 이상, 본문 바로가기, 키보드 초점 표시. 13px 보다 작은 글자 없음
+- hover 반응은 마우스가 있는 화면에서만 (`@media (hover: hover)`), 움직임은 '동작 줄이기'면 끔
 - 머리말이 위에 붙어 있어도 초점이 가려지지 않게 본문 · 꼬리말에만 `scroll-margin-top` (머리말 링크에 초점이 가도 화면이 튀지 않음)
-- axe 검사(홈 1440 · 390, 검색 중, 폰 메뉴, 프로젝트 · 커뮤니티 · 지원 안내 · 준비 중): 위반 0건
+- 세 기수의 1년 달력: 칸을 키보드 화살표로 고르고, 손가락으로 누르면 가장 가까운 칸이 골라짐. 고른 칸의 날짜 · 제목 · 장소를 한 줄로 알림
+- axe 검사(홈 · 프로젝트 · 자세히 보기 창 · 커뮤니티 · 지원 안내 · 팀원 찾기 × 1440 · 390 · 320, 검색 창 · 폰 메뉴 열린 상태, 동작 줄이기): 위반 0건
 
 ## 배포할 때
 
 - `/projects` 같은 주소를 그대로 쓰려면 서버가 모든 주소를 `index.html` 로 보내야 합니다.
   Firebase Hosting 이면 `firebase.json` 의 `hosting.rewrites` 에 `{ "source": "**", "destination": "/index.html" }`.
 - 그런 설정을 할 수 없는 미리보기는 `VITE_ROUTER=hash` 로 빌드합니다 (`#/projects`).
+- 파일 미리보기 창(about:srcdoc · blob: 주소)에서 열리면 라우터가 알아서 메모리 라우터로 바뀝니다 (`app/router.tsx`).
+- 프로젝트 그림 폴더는 `/project-images/` 입니다. `/projects` 주소와 이름이 겹치지 않게 일부러 다르게 했습니다 (서버가 폴더를 먼저 찾으면 페이지가 깨질 수 있음).
 
 ## 고친 버그 기록
 
 - **좁은 화면에서 건물을 누르면 첫 화면이 옆으로 밀림**: 장소 카드 줄을 가운데로 맞추려고 `scrollIntoView` 를 썼더니,
   `overflow: hidden` 인 첫 화면까지 가로로 스크롤됐습니다. 카드 줄만 `scrollTo` 로 직접 움직이고, 첫 화면은 `overflow: clip` 으로 막았습니다.
-- **G-Sprint 단계 당일에 이미 '완료'로 보임**: 10.27 당일에 중간 발표가 체크 표시로 나왔습니다. 당일은 '지금 단계'로 보이게 고쳤습니다 (`lib/sprint.ts`).
+- **G-Sprint 단계 당일에 이미 '완료'로 보임**: 10.27 당일에 중간 발표가 지난 단계로 나왔습니다. 당일은 '지금 단계'(D-day)로 보이게 고쳤습니다 (`pages/timeline.ts` 의 `stepStates`, 날짜 없는 '개발' 단계 정리는 `pages/projects/sprint.ts`). 시안 E 에서 띠를 새로 짜며 한 번 되돌아갔던 것을 다시 고쳤습니다.
+- **하위 페이지 머리 장면이 오른쪽으로 15px 넘침**: 장면을 화면 끝까지 늘리는 길이를 `clientWidth` 로 쟀는데, `scrollbar-gutter: stable` 로 막대 자리를 잡아 두면 그 자리를 빼지 않고 알려 주는 브라우저가 있었습니다. html 상자 폭과 둘 중 작은 값을 씁니다 (`placehero/useHeroLayout.ts`).
+- **'G-' 만 줄 끝에 남음**: 브라우저는 영문 하이픈 뒤에서 줄을 바꿀 수 있어, 폰에서 'G-Sprint' 가 'G-' / 'Sprint' 로 꺾였습니다. 데이터 글자를 그릴 때 하이픈 뒤에 보이지 않는 낱말 이음표(U+2060)를 넣습니다 (`lib/text.ts`).
 - **여러 날 행사가 달을 넘으면 '10.31–02' 로 보임**: `lib/schedule.ts` 의 `rangeLabel` 이 '10.31–11.02' 로 씁니다.
 - **미리보기 패널 글이 '…'으로 잘림**: 한 줄 말줄임 대신 줄을 바꿉니다.
 - **머리말 링크에 초점이 가면 화면이 위로 튐**: `html { scroll-padding-top }` 때문에 붙어 있는 머리말 안 요소까지 '머리말 아래로' 맞추려 했습니다. 본문 · 꼬리말에만 `scroll-margin-top` 을 줍니다.
 - **미리보기를 닫으면 초점이 사라짐**: SVG 건물은 `HTMLElement` 가 아니라서 초점 되돌리기가 건너뛰어졌습니다. `Element` 로 확인하고 `data-place` 로 건물을 찾습니다.
+- **파일 미리보기 창에서 'Failed to construct URL: Invalid URL'**: 해시 라우터는 페이지 주소를 기준으로 URL 을 만드는데, about:srcdoc · blob: 주소는 기준이 될 수 없습니다. http(s) 가 아니면 메모리 라우터를 쓰고 처음 위치는 해시에서 읽습니다.

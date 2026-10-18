@@ -4,6 +4,7 @@ import { HomePage } from '@/features/home/HomePage'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { ErrorPage } from '@/features/pages/ErrorPage'
 import { CampusPreview, CommunityPage, NotFoundPage, NowPreview, PlannedPage, ProjectsPage, RecruitsPage } from './lazyPages'
+import { enableViewTransitions } from './viewTransitions'
 
 /** 다 만든 페이지. 준비 중 페이지를 실제로 만들면 여기로 옮긴다 */
 const BUILT_ROUTES: RouteObject[] = [
@@ -47,3 +48,6 @@ function createRouter() {
 }
 
 export const router = createRouter()
+
+// 페이지를 옮길 때 머리말은 두고 본문만 부드럽게 바꾼다 (지원하지 않는 브라우저 · 동작 줄이기는 그대로)
+enableViewTransitions(router)

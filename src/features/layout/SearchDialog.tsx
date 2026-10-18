@@ -255,6 +255,10 @@ export function SearchDialog({ open, onClose, returnFallbacks }: Props) {
                         {opt.meta}
                         {opt.sample && <span className="sample-badge">예시</span>}
                       </span>
+                      {/* 고른 줄에만 보인다: Enter 로 연다 (아래 키 안내와 같은 내용이라 읽지 않는다) */}
+                      <kbd className={s.optEnter} aria-hidden="true">
+                        ↵
+                      </kbd>
                     </div>
                   )
                 })}

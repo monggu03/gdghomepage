@@ -18,7 +18,13 @@ const isUrlSource = (s: string) => s.startsWith('http')
 const EVENT_PAGE = 'https://gdg.community.dev/events/details/'
 
 /** 화면에 나오지 않는 값: id · 날짜 필드 · 주소 · 종류 이름 · 게시된 영어 원제목 · 기술 이름 · 검색 키워드 · 와이어프레임 번호 */
-const NOT_SHOWN = new Set(['id', 'date', 'endDate', 'start', 'end', 'updatedAt', 'asOf', 'demoDay', 'url', 'repo', 'channel', 'chapterPage', 'github', 'email', 'emailSource', 'nameEn', 'originalTitle', 'stack', 'kind', 'place', 'status', 'keywords', 'wireframe'])
+const NOT_SHOWN = new Set(['id', 'date', 'endDate', 'start', 'end', 'updatedAt', 'asOf', 'demoDay', 'url', 'repo', 'channel', 'chapterPage', 'github', 'email', 'emailSource', 'nameEn', 'originalTitle', 'stack', 'kind', 'place', 'status', 'keywords', 'wireframe',
+  // 프로젝트의 GitHub 숫자 · 그림 경로 (언어 이름은 기술 이름처럼 그대로 보여 준다)
+  'firstCommit', 'lastCommit', 'statsAsOf', 'languages', 'src'])
+
+/** public/project-images 에 실제로 있는 그림 파일 ('/public/project-images/x.webp') */
+const PUBLIC_IMAGES = new Set(Object.keys(import.meta.glob('/public/project-images/*')))
+const CHAPTER_RAW = ['https://raw.githubusercontent.com/GDSC-DGU/', 'https://github.com/GDSC-DGU/']
 
 interface Shown {
   where: string
@@ -153,6 +159,32 @@ describe('projects.json', () => {
   it('기수는 연혁에 있는 기수다', () => {
     const ns = new Set(GENERATIONS.map((g) => g.n))
     for (const p of PROJECTS) if (p.generation !== undefined) expect(ns.has(p.generation), p.id).toBe(true)
+  })
+
+  it('그림 파일이 public/project-images 에 있고, 원본은 챕터 GitHub 조직 저장소다 (바깥 호스팅 그림은 팀 확인 전까지 넣지 않는다)', () => {
+    for (const p of PROJECTS) {
+      for (const img of [...(p.cover ? [p.cover] : []), ...(p.images ?? [])]) {
+        expect(PUBLIC_IMAGES.has(`/public/${img.src}`), `${p.id}: ${img.src}`).toBe(true)
+        expect(img.src.startsWith('project-images/'), `${p.id}: ${img.src}`).toBe(true)
+        expect(CHAPTER_RAW.some((prefix) => img.source.startsWith(prefix)), `${p.id}: ${img.source}`).toBe(true)
+        expect(typeof img.teamCleared, `${p.id}: ${img.src}`).toBe('boolean')
+      }
+    }
+  })
+
+  it('같은 그림을 두 번 싣지 않는다', () => {
+    const srcs = PROJECTS.flatMap((p) => [...(p.cover ? [p.cover.src] : []), ...(p.images ?? []).map((i) => i.src)])
+    expect(unique(srcs)).toEqual([])
+  })
+
+  it('GitHub 숫자에는 확인한 날이 있고, 저장소가 있는 프로젝트의 숫자다', () => {
+    for (const p of PROJECTS) {
+      if (p.contributors !== undefined || p.commits !== undefined || p.languages) {
+        expect(p.statsAsOf, p.id).toBeTruthy()
+        expect(p.repo, p.id).toBeTruthy()
+      }
+      if (p.firstCommit && p.lastCommit) expect(p.firstCommit <= p.lastCommit, p.id).toBe(true)
+    }
   })
 
   it('진행 중 프로젝트는 지금 기수 것이다', () => {
@@ -290,6 +322,24 @@ describe('검사기 (validate.ts) 가 틀린 JSON 을 잡는다', () => {
     ])
     expect(items.map((p) => p.id)).toEqual(['d', 'e'])
     expect(issues.map((i) => i.id)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('프로젝트 그림 · 숫자: 경로 · 원본 주소 · 확인 여부 · 언어 비율 · 커밋 날짜', () => {
+    const base = { name: 'A', program: 'X', year: 2025, status: 'done', repo: 'https://github.com/GDSC-DGU/a', source: 's' }
+    const img = { src: 'project-images/a.webp', alt: 'A 화면', kind: 'screen', width: 960, height: 600, source: 'https://raw.githubusercontent.com/GDSC-DGU/a/main/a.png', teamCleared: false }
+    const { items, issues } = checkProjects([
+      { ...base, id: 'ok', cover: img, images: [{ ...img, kind: 'diagram', caption: '구조' }], languages: [{ name: 'Dart', share: 90 }], contributors: 3, commits: 10, firstCommit: '2025-04-01', lastCommit: '2025-05-01', statsAsOf: '2026-10-17', demo: ['https://youtu.be/x'] },
+      { ...base, id: 'abs-src', cover: { ...img, src: '/projects/a.webp' } },
+      { ...base, id: 'no-teamCleared', cover: { ...img, teamCleared: undefined } },
+      { ...base, id: 'http-source', images: [{ ...img, source: 'http://x.dev/a.png' }] },
+      { ...base, id: 'too-much', languages: [{ name: 'A', share: 80 }, { name: 'B', share: 40 }], statsAsOf: '2026-10-17' },
+      { ...base, id: 'no-basis', contributors: 3 },
+      { ...base, id: 'backwards', firstCommit: '2025-05-01', lastCommit: '2025-04-01' },
+    ])
+    expect(items.map((p) => p.id)).toEqual(['ok'])
+    expect(items[0].cover?.teamCleared).toBe(false)
+    expect(items[0].images?.[0].caption).toBe('구조')
+    expect([...new Set(issues.map((i) => i.id))]).toEqual(['abs-src', 'no-teamCleared', 'http-source', 'too-much', 'no-basis', 'backwards'])
   })
 
   it('기수: 날짜 모양 · 출처 없음', () => {

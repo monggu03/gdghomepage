@@ -27,11 +27,11 @@ export const SCHEDULE: ScheduleEvent[] = [
 export const STATS: Stat[] = []
 
 /**
- * 팀원 모집(teams) 게시판은 아직 열지 않았다. 지어낸 모집 글 대신 지금 상태를 날짜 없이 보여 준다.
+ * 팀원 찾기(teams) 게시판은 아직 열지 않았다. 지어낸 모집 글 대신 지금 상태를 날짜 없이 보여 준다.
  * 스냅샷 구현(공개 페이지)도 이 줄을 그대로 쓴다.
  */
 export const TEAMS_STATUS: PreviewItem[] = [
-  { id: 't-status', label: '상태', title: '팀원 모집 게시판은 아직 열지 않았습니다' },
+  { id: 't-status', label: '상태', title: '팀원 찾기 게시판은 아직 열지 않았습니다' },
   { id: 't-notice', label: '공지', title: '열면 인스타그램 @gdg.donggukuniv에 먼저 알립니다' },
 ]
 

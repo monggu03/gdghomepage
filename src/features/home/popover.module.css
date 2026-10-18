@@ -83,8 +83,10 @@
   background: none;
   cursor: pointer;
 }
-.close:hover {
-  background: var(--subtle);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--subtle);
+  }
 }
 .close svg {
   width: 18px;

@@ -1,10 +1,10 @@
 {
-  "note": "자주 묻는 질문. 공개 출처가 있는 답만. 답은 짧은 ~습니다체. 4기 지원서(Linktree의 forms.gle 링크)는 마감됐지만 안내문은 그대로 열린다 (2026.10.17 확인).",
-  "updatedAt": "2026-10-17",
+  "note": "자주 묻는 질문. 공개 출처가 있는 답만. 답은 짧은 ~습니다체. 홈은 앞의 세 개를 보여 준다. 지원 안내 페이지는 '지원' · '활동' 두 묶음으로 나눈다 (recruits/faqGroups.ts). 4기 지원서(Linktree의 forms.gle 링크)는 마감됐지만 안내문은 그대로 열린다 (2026.10.17 확인). 회비 · 선발 방식 · 주당 활동 시간은 공개 자료가 없어 넣지 않았다 (2026.10.18).",
+  "updatedAt": "2026-10-18",
   "faqs": [
     {
       "id": "who",
-      "q": "누가 지원할 수 있나요?",
+      "q": "비전공자나 저학년도 지원할 수 있나요?",
       "a": "4기 지원서 기준으로, 동국대학교 서울캠퍼스 재학생 · 휴학생 · 수료생이면 전공과 학년에 상관없이 지원할 수 있습니다.",
       "source": "https://forms.gle/LmwqYrdkyrtuvAmX6"
     },
@@ -31,6 +31,24 @@
       "q": "모집은 언제 하나요?",
       "a": "4기는 2026년 8월 18일부터 31일까지 코어 멤버를, 9월 3일부터 10일까지 일반 멤버를 모집했습니다. 5기 일정은 정해지면 인스타그램에 가장 먼저 공지합니다.",
       "source": "https://www.instagram.com/gdg.donggukuniv/"
+    },
+    {
+      "id": "how-to-apply",
+      "q": "어떻게 지원하나요?",
+      "a": "4기는 Linktree에 올린 온라인 지원서로 지원을 받았습니다. 5기 지원 방법은 정해지면 인스타그램 @gdg.donggukuniv에 가장 먼저 공지합니다.",
+      "source": "https://linktr.ee/GDGoC_DGU"
+    },
+    {
+      "id": "designer",
+      "q": "디자이너도 지원할 수 있나요?",
+      "a": "4기에는 Frontend · Backend · AI/ML과 함께 Product Design 파트가 있습니다. 다른 파트처럼 코어 멤버가 세션을 이끌고, 같은 문제를 각자 풀어 본 뒤 서로의 풀이를 비교합니다.",
+      "source": "https://gdg.community.dev/events/details/google-gdg-on-campus-dongguk-university-seoul-south-korea-presents-gdgoc-dgu-4th-member-introduction-amp-part-sessions/"
+    },
+    {
+      "id": "other-chapters",
+      "q": "다른 학교 챕터와도 만나나요?",
+      "a": "3기는 2026년 1월에 건국대 · 숙명여대 챕터와 Inter-Chapter Session을 열어 학생 기술 발표와 커리어 멘토링을 함께했습니다.",
+      "source": "https://gdg.community.dev/events/details/google-gdg-on-campus-dongguk-university-seoul-south-korea-presents-inter-chapter-session-konkuk-x-dongguk-x-sookmyung/"
     },
     {
       "id": "end-of-generation",

@@ -61,8 +61,8 @@ describe('안내판 모양', () => {
   })
 
   it('글자 폭 어림값은 실제 Pretendard 600 15px 폭보다 작지 않다 (자리 계산이 모자라지 않게)', () => {
-    // 브라우저에서 잰 값 (2026-10, getComputedTextLength)
-    const measured: Record<string, number> = { 커뮤니티: 51.5, 프로젝트: 51.5, '팀원 모집': 54.9, '지원 안내': 54.9, 'GDGoC DGU': 86.2 }
+    // 브라우저에서 잰 값 (2026-10, getComputedTextLength. '팀원 찾기' 는 이름을 바꾼 2026-10-18 에 다시 잼)
+    const measured: Record<string, number> = { 커뮤니티: 51.5, 프로젝트: 51.5, '팀원 찾기': 55, '지원 안내': 54.9, 'GDGoC DGU': 86.2 }
     for (const [label, w] of Object.entries(measured)) expect(estimateLabelWidth(label)).toBeGreaterThanOrEqual(w)
   })
 })
