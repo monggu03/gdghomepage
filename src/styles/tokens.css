@@ -58,7 +58,7 @@
 
   /*
    * 글자 크기/줄 높이 (DESIGN 3장 표). 폭에 따라 아래 미디어 쿼리에서 바뀐다.
-   * 84(--t-hero) → 64(display) → 48(section) → 28(h2) 로 단계를 둔다. 40(--t-h1)은 예전 화면용으로만 남긴다.
+   * 80(--t-hero) → 64(display) → 48(section) → 28(h2) 로 단계를 둔다. 40(--t-h1)은 예전 화면용으로만 남긴다.
    */
   --t-display: 800 64px/76px var(--font-kr); /* 하위 페이지 h1 · 먹색 띠 주장 */
   --t-section: 700 48px/60px var(--font-kr); /* 이야기 섹션 주장 제목 */
@@ -171,13 +171,14 @@
 
 /*
  * ── 홈 첫 화면 · 먹색 면 ──
- * --t-hero 는 홈 첫 화면 h1 하나에만 쓴다.
+ * --t-hero 는 홈 첫 화면 h1(이름 워드마크 'GDGoC DGU') 하나에만 쓴다. 영문 워드마크라 Google Sans Flex.
+ * 넓은 화면은 오른쪽 글자 판(12칸 중 5칸) 폭에 맞춘다: 워드마크 폭은 글자 크기의 약 5.8배  → 1200 칸(글자 판 약 486px)에서 80px 가 여유 있는 끝.
  * --band-* 는 먹색 면(홈 띠 · /projects G-Sprint 띠 · /community 이번 주 · 꼬리말)이 쓴다. 한 페이지에 먹색 면은 하나(꼬리말 제외).
  */
 :root {
-  /* 첫 화면 h1: 한 문장이 화면의 주인공. 자간은 -0.03em 까지만 */
-  --t-hero: 800 84px/96px var(--font-kr);
-  --ls-hero: -0.03em;
+  /* 첫 화면 h1: 이름 워드마크. 자간은 -0.035em 까지만 (DESIGN 2장 -0.04em 하한 안) */
+  --t-hero: 700 80px/1 var(--font-num);
+  --ls-hero: -0.035em;
 
   /* 먹색 면 (먹색 바탕 위 흰색 · 회색 단계). band-ink-3 도 바탕과 6.6:1 */
   --band-bg: #191b1f;
@@ -190,31 +191,24 @@
 
 @media (max-width: 1279px) {
   :root {
-    --t-hero: 800 72px/84px var(--font-kr);
+    --t-hero: 700 64px/1 var(--font-num);
   }
 }
 
 @media (max-width: 1023px) {
   :root {
-    --t-hero: 800 60px/72px var(--font-kr);
+    --t-hero: 700 64px/1 var(--font-num);
   }
 }
 
 @media (max-width: 767px) {
   :root {
-    --t-hero: 800 38px/50px var(--font-kr);
-  }
-}
-
-/* 넓지만 낮은 화면(1280×720 노트북): 첫 화면에서 지도가 조금 더 보이게 */
-@media (min-width: 1024px) and (max-height: 780px) {
-  :root {
-    --t-hero: 800 76px/86px var(--font-kr);
+    --t-hero: 700 48px/1 var(--font-num);
   }
 }
 
 @media (max-width: 359px) {
   :root {
-    --t-hero: 800 33px/44px var(--font-kr);
+    --t-hero: 700 42px/1 var(--font-num);
   }
 }

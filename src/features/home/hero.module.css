@@ -1,69 +1,66 @@
-/* ── 첫 화면 위: 큰 한 문장 | 모집 상태, 그 아래 소개 한 문장 + 행동 (12칸 격자) ──
- * 문장이 주인공이라 글자는 크게(--t-hero: 홈 첫 화면에만 쓰는 크기), 소개는 한 문장. 지도는 바로 아래에서 화면 끝까지 이어진다.
+/*
+ * 첫 화면 (팀 피드백 2026-10-28): 지도 = 첫 블록 배경(사이트맵), 오른쪽에 짧은 글자 판.
+ * 글자 판: 이름 워드마크(h1, 홈 첫 화면에만 쓰는 크기) → 정식 이름 → 짧은 소개 → 버튼 → 모집 상태.
+ * 넓은 화면(1024↑)만 겹쳐 놓는다. 그보다 좁으면 글자 판 → 지도 위아래.
  */
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+
 .top {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: var(--gutter);
-  padding-top: 52px;
-  padding-bottom: 32px;
+  padding-top: 40px;
+  padding-bottom: 24px;
+}
+.panel {
+  max-width: 36rem;
 }
 
 .title {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  margin: 0;
+}
+/* 영문 워드마크라 Google Sans Flex (DESIGN 3장). 크기 단계는 --t-hero (styles/tokens.css) */
+.wordmark {
+  display: block;
   font: var(--t-hero);
   letter-spacing: var(--ls-hero);
   color: var(--ink-900);
+  white-space: nowrap;
 }
-/* 넓은 화면: 묶음마다 한 줄 (뜻으로 끊는다) */
-.phrase {
-  display: block;
-}
-
-/* 모집 상태: 예전 D-day 자리. 둘째 · 셋째 줄이 짧아 생기는 오른쪽 빈자리에 붙인다 */
-.status {
-  grid-column: 10 / -1;
-  grid-row: 1;
-  align-self: end;
-  margin-bottom: 10px;
-}
-
-/* 소개 + 행동: h1 아래 줄 */
-.intro {
-  grid-column: 1 / span 8;
-  grid-row: 2;
-  margin-top: 28px;
+.fullName {
+  margin-top: 14px;
+  text-wrap: balance;
+  font: 600 18px/26px var(--font-kr);
+  letter-spacing: -0.01em;
+  color: var(--ink-900);
 }
 .lead {
-  max-width: 39em;
+  margin-top: 16px;
   font: var(--t-lead);
   letter-spacing: -0.01em;
   color: var(--ink-700);
+  text-wrap: pretty;
+}
+.leadLine {
+  display: block;
+}
+/* 'Google Developer Groups on Campus' 는 한 덩어리로 (좁으면 '동국대학교' 뒤에서만 줄이 바뀐다) */
+.keep {
+  white-space: nowrap;
 }
 .actions {
+  margin-top: 28px;
+}
+.status {
   margin-top: 32px;
+  max-width: 24rem;
 }
 
-/* 넓지만 낮은 화면(1280×720 노트북): 위아래 여백을 줄여 지도가 첫 화면에 더 보이게 */
-@media (min-width: 1024px) and (max-height: 780px) {
-  .top {
-    padding-top: 40px;
-    padding-bottom: 24px;
-  }
-  .intro {
-    margin-top: 20px;
-  }
-  .actions {
-    margin-top: 20px;
-  }
-}
-
-/* ── 지도: 화면 끝에서 끝까지, 위에 아무것도 얹지 않는다 ── */
+/* ── 지도 (좁은 화면 기본: 글자 판 아래에서 화면 끝까지) ── */
 .map {
   position: relative;
   isolation: isolate;
-  height: clamp(440px, 58vh, 640px);
+  height: clamp(360px, 52vw, 520px);
   overflow: hidden;
   overflow: clip;
 }
@@ -86,40 +83,104 @@
   bottom: 0;
   background: linear-gradient(rgba(255, 255, 255, 0), var(--paper));
 }
+/* 글자 판 뒤 흰 덮개: 넓은 화면에서만 */
+.wash {
+  display: none;
+}
 
-/* ── 좁은 데스크톱 · 태블릿: 모집 상태는 소개 옆으로 ── */
-@media (max-width: 1023px) {
-  .status {
-    grid-column: 9 / -1;
-    grid-row: 2;
-    align-self: start;
-    margin: 32px 0 0;
+/* ── 넓은 화면: 지도가 첫 블록 전체, 글자 판은 오른쪽 5칸 ── */
+@media (min-width: 1024px) {
+  .hero {
+    height: clamp(560px, calc(100svh - 64px), 760px);
   }
-  .intro {
-    grid-column: 1 / span 7;
+  .map {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    height: auto;
+  }
+  /* 글자 판 줄은 지도 위에 얹되, 빈 곳은 눌러도 지도로 통한다 (건물을 누를 수 있게) */
+  .top {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: center;
+    height: 100%;
+    padding-block: 32px 56px;
+    pointer-events: none;
+  }
+  .panel {
+    grid-column: 8 / -1;
+    max-width: none;
+    pointer-events: auto;
+  }
+  .fullName {
+    margin-top: 20px;
+    font-size: 20px;
+    line-height: 30px;
+  }
+  .lead {
+    margin-top: 20px;
+  }
+  .actions {
+    margin-top: 36px;
+  }
+  .status {
+    margin-top: 48px;
+  }
+  /*
+   * 흰 덮개: 글자 판 바로 왼쪽(--panel-x, HeroSection 이 잰 값)에서 72px 동안 짙어져 오른쪽 끝까지.
+   * 건물 · 안내판은 장면을 맞출 때 글자 판에서 80px 이상 떨어지므로 덮개에 가리지 않는다.
+   * 미리보기 창(z-index 5)보다는 아래.
+   */
+  .wash {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--panel-x, 58%) - 72px);
+    right: 0;
+    z-index: 1;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--paper) 72px);
+    pointer-events: none;
   }
 }
 
-/* ── 폰: 위에서 아래로 ── */
-@media (max-width: 767px) {
-  .top {
-    display: flex;
-    flex-direction: column;
-    padding-top: 28px;
-    padding-bottom: 24px;
-  }
-  .phrase {
-    display: inline;
-  }
-  .intro {
-    margin-top: 20px;
+/* 넓지만 낮은 화면(1280×720 노트북): 글자 사이를 좁힌다 */
+@media (min-width: 1024px) and (max-height: 780px) {
+  .actions {
+    margin-top: 28px;
   }
   .status {
-    order: 3;
-    margin: 24px 0 0;
+    margin-top: 32px;
+  }
+}
+
+/* ── 폰: 위에서 아래로, 글자는 한 줄로 이어서 ── */
+@media (max-width: 767px) {
+  .top {
+    padding-top: 28px;
+    padding-bottom: 20px;
+  }
+  .fullName {
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .lead {
+    margin-top: 12px;
+  }
+  .leadLine {
+    display: inline;
   }
   .actions {
     margin-top: 24px;
+  }
+  .status {
+    margin-top: 24px;
+    max-width: none;
   }
   .map {
     height: 300px;

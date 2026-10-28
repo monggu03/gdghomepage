@@ -1,6 +1,6 @@
 /*
  * 홈 프로젝트 (이야기 섹션 '팀으로 만들어 공개한 서비스 {n}개').
- * 큰 타일 2장(16:10 · radius 20, 실제 그림) → 이름표 → 아이콘 줄 8개(common/IconRow).
+ * 큰 타일 2장(16:10 · radius 20, 실제 그림) → 이름표 → 나머지 완성 프로젝트 전부 목록 (projects/ExhibitCard 와 같은 모양).
  * 약조심 타일은 실제 데스크톱 화면이 타일 오른쪽 · 아래로 잘려 이어지고, 같은 화면의 폰 화면이 그 위 오른쪽에 떠 있다.
  * 위치 · 크기는 타일 폭(container query, cqi)에 비례해서 어느 폭에서나 같은 구도이고, 데스크톱 화면 제목 글자가 읽히는 크기로 건다.
  * 기기 틀 · 노치 없이 1px 선만, 그림자는 위에 놓인 폰 화면에만 (DESIGN 8장 5).
@@ -167,9 +167,15 @@
   }
 }
 
-/* ── 아이콘 줄 ── */
-.icons {
+/* ── 나머지 전부: /projects 전시실과 같은 아이콘 · 이름 · 한 줄 목록 (3칸 · 태블릿 2칸 · 폰 1칸) ── */
+.rest {
   margin-top: 72px;
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+}
+/* 폰 펼치기 버튼은 폰에서만 (전역 .btn-secondary 의 display 를 이기도록 두 단계로) */
+.rest .more {
+  display: none;
 }
 
 /* ── 좁은 데스크톱 · 태블릿 ── */
@@ -188,12 +194,13 @@
     font-size: 15px;
     line-height: 24px;
   }
-  .icons {
+  .rest {
     margin-top: 56px;
+    padding-top: 32px;
   }
 }
 
-/* ── 폰: 큰 타일 한 줄에 하나, 아이콘 4칸 × 2줄 (태블릿 8칸은 공통 IconRow 가 한다) ── */
+/* ── 폰: 큰 타일 한 줄에 하나, 나머지 목록은 6개 먼저 ── */
 @media (max-width: 767px) {
   .section {
     --story-top: 56px;
@@ -227,8 +234,18 @@
   .summary {
     margin-top: 4px;
   }
-  .icons {
+  .rest {
     margin-top: 40px;
+    padding-top: 24px;
+  }
+  /* 폰: 처음엔 몇 개만, 버튼으로 나머지를 펼친다 (버튼이 있을 때만 숨긴다: 스크립트가 안 돌면 전부 보인다) */
+  .rest:has(.more) .restList:not([data-expanded]) > li:nth-child(n + 7) {
+    display: none;
+  }
+  .rest .more {
+    display: flex;
+    width: 100%;
+    margin-top: 24px;
   }
 }
 

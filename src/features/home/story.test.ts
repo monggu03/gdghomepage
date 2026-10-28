@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { FAQS, PROJECTS, PUBLIC_PROJECTS } from '@/content'
+import { FAQS, PROJECTS, PUBLIC_PROJECTS, isPublicProject } from '@/content'
 import { BAND, CLOSING, FEATURED_PROJECTS, HERO, PROJECTS_STORY, SPRINT_LINE, VOICES, voices, WAYS } from '@/content/story'
-import { isShowableVoice, projectCounts } from './homeData'
+import { isShowableVoice, projectCounts, restProjects } from './homeData'
 
 /** 화면에 나오는 홈 문장 */
 const shown: { where: string; text: string }[] = [
-  ...HERO.title.before.map((t, i) => ({ where: `HERO.before[${i}]`, text: t })),
-  ...HERO.title.after.map((t, i) => ({ where: `HERO.after[${i}]`, text: t })),
-  { where: 'HERO.pitch', text: HERO.pitch },
+  { where: 'HERO.fullName', text: HERO.fullName },
+  { where: 'HERO.pitch', text: HERO.pitch.join(' ') },
   { where: 'PROJECTS_STORY.eyebrow', text: PROJECTS_STORY.eyebrow },
   { where: 'PROJECTS_STORY.title', text: PROJECTS_STORY.title },
   ...PROJECTS_STORY.sub.map((t, i) => ({ where: `PROJECTS_STORY.sub[${i}]`, text: t })),
@@ -34,7 +33,7 @@ const shown: { where: string; text: string }[] = [
 const claims = [PROJECTS_STORY.title, BAND.lines.join(' '), CLOSING.title, VOICES.title]
 
 /** 끝나는 문장 (~니다.) 만 */
-const sentences = shown.filter((x) => /[.]$/.test(x.text) && !x.where.startsWith('HERO.before') && !x.where.startsWith('HERO.after'))
+const sentences = shown.filter((x) => /[.]$/.test(x.text))
 
 /** content.test.ts 와 같은 규칙: 영어 · 숫자 · 닫는 괄호 뒤에 띄어 쓴 조사 */
 const SPACED_PARTICLE = /[A-Za-z0-9)] (은|는|이|가|을|를|으로|로|와|과|에|에서|의|에는|에서는|으로는|로는|이나|나|도|만|부터|까지|입니다|이다)(\s|$|[.,?!·)])/
@@ -59,10 +58,16 @@ describe('홈 문구 (content/story.ts)', () => {
     for (const x of shown) expect(x.text, x.where).not.toMatch(/(해요|어요|아요|예요|돼요|세요)\.$/)
   })
 
-  it('첫 화면 h1 은 데모데이 앞뒤로 시제만 바뀐다', () => {
-    expect(HERO.title.before.slice(0, -1)).toEqual(HERO.title.after.slice(0, -1))
-    expect(HERO.title.before.at(-1)).toMatch(/냅니다\.$/)
-    expect(HERO.title.after.at(-1)).toMatch(/냈습니다\.$/)
+  it('첫 화면은 이름 + 짧은 소개 (긴 문장은 G-Sprint 칸으로 옮겼다)', () => {
+    expect(HERO.name).toBe('GDGoC DGU')
+    expect(HERO.pitch.join(' ').length).toBeLessThanOrEqual(40)
+    expect(shown.filter((x) => /9월에 처음 만난/.test(x.text)).map((x) => x.where)).toEqual(['SPRINT_LINE.before', 'SPRINT_LINE.after'])
+  })
+
+  it('G-Sprint 칸 문장은 데모데이 앞뒤로 시제만 바뀐다', () => {
+    expect(SPRINT_LINE.before.replace(/냅니다\.$/, '')).toBe(SPRINT_LINE.after.replace(/냈습니다\.$/, ''))
+    expect(SPRINT_LINE.before).toMatch(/냅니다\.$/)
+    expect(SPRINT_LINE.after).toMatch(/냈습니다\.$/)
   })
 
   it('주장 제목은 질문형으로 쓰지 않는다', () => {
@@ -134,13 +139,12 @@ describe('홈 문구 (content/story.ts)', () => {
     const first = byId.get(FEATURED_PROJECTS.big[0])
     const kinds = new Set([first?.cover, ...(first?.images ?? [])].map((img) => img?.kind))
     expect(kinds.has('screen') && kinds.has('mobile')).toBe(true)
-    // 아이콘 줄: 여덟 개, 모두 실제 로고 · 앱 아이콘 표지가 있고 큰 타일과 겹치지 않는다
-    expect(FEATURED_PROJECTS.icons).toHaveLength(8)
-    for (const id of FEATURED_PROJECTS.icons) {
-      expect(byId.get(id)?.cover?.kind, id).toBe('logo')
-      expect(byId.get(id)?.status, id).toBe('done')
-      expect(FEATURED_PROJECTS.big as readonly string[], id).not.toContain(id)
-    }
+    // 나머지 목록 = 큰 타일을 뺀 완성 프로젝트 전부 (homeData.restProjects)
+    const rest = restProjects(PROJECTS.filter(isPublicProject), FEATURED_PROJECTS.big)
+    const done = PROJECTS.filter(isPublicProject).filter((p) => p.status === 'done')
+    expect(rest.length).toBe(done.length - FEATURED_PROJECTS.big.length)
+    for (const id of FEATURED_PROJECTS.big) expect(rest.map((p) => p.id)).not.toContain(id)
+    for (let i = 1; i < rest.length; i++) expect(rest[i - 1].year).toBeGreaterThanOrEqual(rest[i].year)
   })
 
   it('사람: 비어 있거나, 모두 공개 동의 기록이 있다 (지어낸 후기 금지)', () => {

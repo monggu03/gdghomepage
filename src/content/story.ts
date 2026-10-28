@@ -35,15 +35,13 @@ type Source = string | readonly string[]
 
 export const HERO = {
   /**
-   * h1. 뜻으로 끊은 묶음 (넓은 화면은 묶음마다 한 줄). 폰에서 '한 팀으로' · '서비스를 냅니다'가 갈라지지 않게 붙임 공백(\u00a0).
-   * G-Sprint 데모데이(config/site.ts SPRINT.demoDay) 다음 날부터 지난 일로 바꾼다.
+   * 첫 화면 (팀 피드백 2026-10-28: 긴 문장 대신 로고 · 이름 + 짧은 소개로 임팩트 있게).
+   * h1 = 이름(워드마크, 공식 로고가 오면 그 옆에). 예전 h1 '9월에 처음 만난 사람들이 …' 은 다듬어서 G-Sprint 칸(SPRINT_LINE)으로 옮겼다.
    */
-  title: {
-    before: ['9월에 처음 만난 사람들이', '12월엔 한\u00a0팀으로', '서비스를\u00a0냅니다.'],
-    after: ['9월에 처음 만난 사람들이', '12월엔 한\u00a0팀으로', '서비스를\u00a0냈습니다.'],
-  },
-  /** h1 아래 한 문장 (챕터 About: 'regardless of their major or year') */
-  pitch: '전공과 학년에 상관없이 함께하는 동국대학교 Google Developer Groups on Campus입니다.',
+  name: 'GDGoC DGU',
+  fullName: '동국대학교 Google Developer Groups on Campus',
+  /** 이름 아래 짧은 소개 한 문장 (챕터 About: 'regardless of their major or year'). 넓은 화면은 쉼표에서 두 줄 */
+  pitch: ['전공과 학년에 상관없이,', '같이 만들며 배우는 개발 커뮤니티입니다.'],
   source: [SOURCES.chapter, SOURCES.sprintKickoff],
 } as const
 
@@ -61,20 +59,23 @@ export const PROJECTS_STORY = {
   sub: ['{sc}개는 Google Solution Challenge에서 만들었습니다.', '코드는 모두 GitHub {org}에 공개되어 있습니다.'],
   /** 섹션 머리 오른쪽 행동 하나 (사이트 안 →) */
   more: '프로젝트 {n}개 모두 보기',
-  /** 아이콘 줄의 목록 이름 (읽기 프로그램용) */
-  iconsLabel: '그 밖의 프로젝트',
+  /** 큰 타일 아래 나머지 전부 목록의 이름 (읽기 프로그램용) */
+  restLabel: '그 밖의 프로젝트',
+  /** 폰에서는 목록을 이만큼만 먼저 보이고, 나머지는 버튼으로 펼친다 (홈이 너무 길어지지 않게). 바꾸면 home/projects.module.css 의 nth-child(n + 7) 도 같이 */
+  phoneFirst: 6,
+  /** 폰 펼치기 버튼. {n} = 아직 안 보이는 수 */
+  moreOnPhone: '프로젝트 {n}개 더 보기',
   source: [SOURCES.github, 'src/content/projects.json status · program · repo'],
 } as const
 
 /**
- * 홈에 거는 프로젝트.
+ * 홈에 거는 프로젝트 (팀 피드백 2026-10-28: '1~2개만 크게 보이고 나머지는 아이콘만? 다 보여 줘야').
  * - big: 큰 타일 두 장. 실제 화면이 있는 것만 (첫째 약조심은 데스크톱 화면 위에 폰 화면을 겹쳐 건다, 둘째 Greenap 은 소개 그림).
  *   없는 id · 그림이 없는 프로젝트는 건너뛰고, 모자라면 실제 화면 · 소개 그림이 있는 최근 프로젝트로 채운다.
- * - icons: 아이콘 줄 여덟 개. 실제 로고 · 앱 아이콘(cover)이 있는 것만 그린다 (없는 id 는 건너뛴다).
+ * - 나머지 완성 프로젝트는 전부 아이콘 · 이름 · 한 줄 목록으로 (최근 것부터, /projects 전시실과 같은 모양).
  */
 export const FEATURED_PROJECTS = {
   big: ['yakjosim', 'greenap'],
-  icons: ['agriguard', 'todai', 'clarity', 'mind-cursor', 'peekaboo', 'tigo', 'globook', 'earlips'],
   source: [SOURCES.github, 'src/content/projects.json summary · cover · images'],
 } as const
 
@@ -149,12 +150,13 @@ export const WAYS: readonly Way[] = [
 
 /**
  * G-Sprint 칸 (확인된 규모가 있을 때). 규모 '{teams}팀 {members}명' 은 큰 숫자(key)가 말하고,
- * 문장은 {gen} {day} 만 채운다. 숫자 기준은 짧게: 킥오프 페이지에서 확인한 규모라 '킥오프 기준'.
+ * 문장은 {day} 만 채운다 (몇 기인지는 칸 위 작은 이름 '4기 G-Sprint' 가 말한다). 숫자 기준은 짧게: 킥오프 페이지에서 확인한 규모라 '킥오프 기준'.
  */
 export const SPRINT_LINE = {
   key: '{teams}팀 {members}명',
-  before: '{gen}기는 아이디어부터 배포까지 서비스를 만들고, {day}\u00a0데모데이에서 시연합니다.',
-  after: '{gen}기는 만든 서비스를 {day}\u00a0데모데이에서 시연했습니다.',
+  /** 예전 첫 화면 문장을 다듬어 옮긴 것 (팀 피드백: 'G-Sprint 활동 소개 쪽에'). 데모데이 다음 날부터 지난 일로 */
+  before: '9월에 처음 만난 사람들이 한\u00a0팀이 되어, {day}\u00a0데모데이에 서비스를 냅니다.',
+  after: '9월에 처음 만난 사람들이 한\u00a0팀이 되어, {day}\u00a0데모데이에 서비스를 냈습니다.',
   basis: '킥오프 기준',
 } as const
 

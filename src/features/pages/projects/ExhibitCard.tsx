@@ -49,8 +49,18 @@ export function LiveLink({ project, tone = 'inline', className = '' }: { project
   )
 }
 
-/** 작품 이름 = 자세히 보기 창(?p=id)을 여는 링크. 누르는 자리는 CSS 로 작품 전체까지 넓힌다 */
-function OpenLink({ project, className }: { project: Project; className: string }) {
+/**
+ * 작품 이름 = 자세히 보기 창(?p=id)을 여는 링크. 누르는 자리는 CSS 로 작품 전체까지 넓힌다.
+ * linkTo: 다른 페이지(홈)에서 쓸 때 그 창이 있는 주소('/projects'). 그때는 /projects?p=id 로 옮겨 가서 창이 열린다.
+ */
+function OpenLink({ project, className, linkTo }: { project: Project; className: string; linkTo?: string }) {
+  if (linkTo) {
+    return (
+      <Link className={className} to={{ pathname: linkTo, search: sheetSearch(project.id) }}>
+        {project.name}
+      </Link>
+    )
+  }
   return (
     <Link className={className} to={{ search: sheetSearch(project.id) }} state={SHEET_STATE} preventScrollReset aria-haspopup="dialog" data-sheet-card={project.id}>
       {project.name}
@@ -117,9 +127,9 @@ export function FeaturedWork({ project, eager = false, level = 4 }: { project: P
 }
 
 /** 대표 작품 아래 줄 목록 (넓은 화면 3칸 · 태블릿 2칸 · 폰 1칸) */
-export function WorkList({ label, children }: { label: string; children: ReactNode }) {
+export function WorkList({ label, children, id, className = '', expanded }: { label: string; children: ReactNode; id?: string; className?: string; expanded?: boolean }) {
   return (
-    <ul className={c.list} aria-label={label}>
+    <ul id={id} className={`${c.list} ${className}`} aria-label={label} data-expanded={expanded || undefined}>
       {children}
     </ul>
   )
@@ -129,7 +139,7 @@ export function WorkList({ label, children }: { label: string; children: ReactNo
  * 줄 목록의 작품 한 점: 아이콘 표지(흰 판 · 로고, 그림이 없으면 머리글자 표지) + 이름 / 한 줄 설명(두 줄까지) / 쓴 기술.
  * 만든 해 · 기수는 전시실 머리가 말하므로 되풀이하지 않는다. withProgram: 여러 프로그램이 섞인 방(그 밖의 프로젝트)에서 프로그램 · 연도를 앞에.
  */
-export function ExhibitCard({ project, withProgram = false, level = 4 }: { project: Project; withProgram?: boolean; level?: 3 | 4 }) {
+export function ExhibitCard({ project, withProgram = false, level = 4, linkTo }: { project: Project; withProgram?: boolean; level?: 3 | 4; linkTo?: string }) {
   const Heading = level === 3 ? 'h3' : 'h4'
   // 그 밖의 프로젝트: '2025 · 챕터 웹사이트 · Next.js · TypeScript' (연도는 한 번만)
   const meta: ReactNode[] = withProgram
@@ -140,7 +150,7 @@ export function ExhibitCard({ project, withProgram = false, level = 4 }: { proje
       <Plate project={project} className={c.icon} />
       <div className={c.label}>
         <Heading className={c.name}>
-          <OpenLink project={project} className={c.open} />
+          <OpenLink project={project} className={c.open} linkTo={linkTo} />
         </Heading>
         {project.summary && <p className={c.summary}>{project.summary}</p>}
         {meta.length > 0 && (

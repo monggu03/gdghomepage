@@ -1,21 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { placeOfPath, transitionKind } from './viewTransitions'
+import { NAV_ORDER } from '@/config/places'
+import { SLIDE_ORDER, placeOfPath, transitionKind } from './viewTransitions'
 
-describe('페이지 전환 종류', () => {
+describe('페이지 전환 (메뉴 순서대로 좌우 밀기)', () => {
   it('주소 이름이 같으면(?p= 로 창만 여닫기) 전환하지 않는다', () => {
     expect(transitionKind('/projects', '/projects')).toBeNull()
+    expect(transitionKind('/', '')).toBeNull()
   })
-  it('홈 → 장소 페이지는 건물로 들어가기, 장소 → 홈은 물러나기', () => {
-    expect(transitionKind('/', '/projects')).toEqual({ kind: 'enter', place: 'projects' })
-    expect(transitionKind('/community/', '/')).toEqual({ kind: 'leave', place: 'community' })
+  it('머리말에서 오른쪽 메뉴로 가면 forward, 왼쪽으로 가면 back', () => {
+    expect(transitionKind('/', '/projects')).toBe('forward')
+    expect(transitionKind('/projects', '/community')).toBe('forward')
+    expect(transitionKind('/community', '/recruits')).toBe('forward')
+    expect(transitionKind('/recruits', '/teams')).toBe('back')
+    expect(transitionKind('/community/', '/')).toBe('back')
   })
-  it('장소끼리 · 장소가 아닌 주소는 그냥 바꾸기', () => {
-    expect(transitionKind('/projects', '/community')).toEqual({ kind: 'plain', place: null })
-    expect(transitionKind('/', '/admin')).toEqual({ kind: 'plain', place: null })
+  it('홈 ↔ 장소도 다른 메뉴와 같은 규칙 (지도 확대 같은 따로 노는 전환이 없다)', () => {
+    for (const to of ['/projects', '/community', '/teams', '/recruits']) expect(transitionKind('/', to)).toBe('forward')
+  })
+  it('장소가 아닌 주소가 끼면 페이드', () => {
+    expect(transitionKind('/', '/admin')).toBe('fade')
+    expect(transitionKind('/nope', '/projects')).toBe('fade')
   })
   it('하위 주소도 그 장소로 본다', () => {
     expect(placeOfPath('/recruits/faq')).toBe('recruits')
-    expect(placeOfPath('/')).toBeNull()
+    expect(placeOfPath('/')).toBe('about')
     expect(placeOfPath('/projectsx')).toBeNull()
+  })
+  it('밀기 순서에 모든 메뉴 장소가 한 번씩 있다', () => {
+    expect([...SLIDE_ORDER].sort()).toEqual([...NAV_ORDER].sort())
   })
 })

@@ -481,10 +481,12 @@ button,
 /*
  * ── 페이지 전환 (View Transitions, app/viewTransitions.ts 가 켠다) ──
  * 스크롤에 따라 나타나는 움직임은 쓰지 않는다. 움직임은 '장소를 옮길 때' 한 번뿐:
- * - 머리말은 그대로 있고(site-header), 본문만 바뀐다: 앞 페이지는 빨리 사라지고(120ms) 새 페이지가 떠오른다(240ms). 위치는 움직이지 않는다.
+ * - 머리말은 그대로 있고(site-header), 본문만 바뀐다.
+ * - 메뉴 사이 이동은 모두 같은 '좌우 밀기'다 (팀 피드백: 전환을 하나로 통일). 머리말 순서에서 오른쪽 메뉴로 가면
+ *   앞 화면이 왼쪽으로 빠지고 새 화면이 오른쪽에서 들어온다(data-vt=forward), 왼쪽 메뉴로 가면 반대(back).
+ * - 장소가 아닌 주소(관리자 · 없는 주소)는 페이드만(data-vt=fade 또는 기본).
  * - 메뉴 밑줄(nav-active)은 앞 메뉴에서 새 메뉴로 미끄러진다.
- * - 홈 지도에서 그 건물이 화면에 보일 때 그 장소로 가면(data-vt=enter) 건물 쪽으로 조금 다가가며 사라진다 = 건물 앞(PlaceHero)으로 들어간다.
- *   돌아올 때(data-vt=leave)는 거꾸로 건물에서 물러나며 지도가 나타난다. 기준점은 건물 가운데(--vt-x · --vt-y).
+ * 손가락으로 쓸어 페이지를 넘기는 동작은 넣지 않는다: 브라우저의 '쓸어서 뒤로 가기'와 부딪히고, 가로로 넘기는 목록 · 지도와도 겹친다.
  * '동작 줄이기'면 전환 자체를 켜지 않고(JS), 혹시 켜져도 여기서 멈춘다.
  */
 @keyframes vt-out {
@@ -497,32 +499,18 @@ button,
     opacity: 0;
   }
 }
-/* 들어가기: 앞 화면이 건물 쪽으로 다가가며(점점 빠르게) 사라진다. 처음 30% 는 또렷하게 남겨 '다가간다'가 보이게 */
-@keyframes vt-enter-out {
-  0% {
-    opacity: 1;
-    transform: none;
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
+/* 좌우 밀기: 머리말 순서에서 오른쪽 메뉴로 가면 앞 화면이 왼쪽으로 빠지고 새 화면이 오른쪽에서 들어온다 (back 은 반대).
+ * 거리는 짧게(48px) + 페이드: 화면 전체가 미끄러지는 큰 움직임보다 차분하고, 방향은 분명히 읽힌다. 머리말은 움직이지 않는다 */
+@keyframes vt-slide-out {
+  to {
     opacity: 0;
-    transform: scale(1.1);
+    transform: translateX(calc(var(--vt-dir, 1) * -48px));
   }
 }
-/* 물러나기: 지도가 건물 쪽에서 뒤로 물러나며(점점 느리게) 나타난다 */
-@keyframes vt-leave-in {
-  0% {
+@keyframes vt-slide-in {
+  from {
     opacity: 0;
-    transform: scale(1.1);
-  }
-  40% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-    transform: none;
+    transform: translateX(calc(var(--vt-dir, 1) * 48px));
   }
 }
 ::view-transition-old(root) {
@@ -531,17 +519,20 @@ button,
 ::view-transition-new(root) {
   animation: vt-in var(--dur-page-in) var(--ease) 60ms both;
 }
-html[data-vt='enter']::view-transition-old(root) {
-  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
-  animation: vt-enter-out 280ms cubic-bezier(0.4, 0, 1, 1) both;
+html[data-vt='forward'],
+html[data-vt='back'] {
+  --vt-dir: 1;
 }
-/* 앞 화면이 거의 사라진 뒤에 새 화면이 떠오른다 (두 화면 글자가 겹쳐 보이는 순간을 줄인다) */
-html[data-vt='enter']::view-transition-new(root) {
-  animation-delay: 220ms;
+html[data-vt='back'] {
+  --vt-dir: -1;
 }
-html[data-vt='leave']::view-transition-new(root) {
-  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
-  animation: vt-leave-in 360ms var(--ease) 60ms both;
+html[data-vt='forward']::view-transition-old(root),
+html[data-vt='back']::view-transition-old(root) {
+  animation: vt-slide-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+html[data-vt='forward']::view-transition-new(root),
+html[data-vt='back']::view-transition-new(root) {
+  animation: vt-slide-in 280ms var(--ease) 80ms both;
 }
 ::view-transition-group(nav-active) {
   animation-duration: 280ms;

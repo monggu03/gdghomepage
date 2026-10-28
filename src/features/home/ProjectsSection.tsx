@@ -1,16 +1,19 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CHAPTER, PROJECTS, isPublicProject } from '@/content'
 import { FEATURED_PROJECTS, PROJECTS_STORY } from '@/content/story'
 import { useProjects } from '@/data/queries'
 import type { Project, ProjectImage } from '@/domain/types'
-import { IconRow, StorySection, projectIcon } from '@/features/common'
-import { assetUrl, projectCover, projectGallery } from '@/features/pages/projects/exhibit'
+import { StorySection } from '@/features/common'
+import { ExhibitCard, WorkList } from '@/features/pages/projects/ExhibitCard'
+import { assetUrl, projectGallery } from '@/features/pages/projects/exhibit'
 import { sheetSearch } from '@/features/pages/projects/sheetLink'
-import { fill, pickProjects, projectCounts, projectMeta, tileShots } from './homeData'
+import { fill, pickProjects, projectCounts, projectMeta, restProjects, tileShots } from './homeData'
 import s from './projects.module.css'
 
 const BIG = 2
+/** 나머지 목록 id (폰 펼치기 버튼이 가리킨다) */
+const REST_ID = 'home-rest-projects'
 /** GitHub 조직 이름 ('https://github.com/GDSC-DGU' → 'GDSC-DGU') */
 const ORG = CHAPTER.github.replace(/\/+$/, '').split('/').pop() ?? 'GDSC-DGU'
 
@@ -74,12 +77,15 @@ function withNum(template: string, n: number) {
 
 /**
  * 프로젝트 (이야기 섹션): '팀으로 만들어 공개한 서비스 {n}개'.
- * 큰 실물 둘(실제 화면 큰 타일 2장) + 작은 실물 여럿(실제 로고 아이콘 8개)으로 크기 위계를 만든다 (DESIGN 1 · 8장).
+ * 큰 실물 둘(실제 화면 큰 타일 2장) + 나머지 완성 프로젝트 전부(아이콘 · 이름 · 한 줄 목록, /projects 전시실과 같은 모양)로
+ * 크기 위계를 두면서 '지금까지 만든 것'을 다 보여 준다 (팀 피드백 2026-10-28).
+ * 폰은 목록을 PROJECTS_STORY.phoneFirst 개만 먼저 보이고 '프로젝트 N개 더 보기' 로 펼친다 (넓은 화면은 처음부터 전부, 버튼 없음).
  * 숫자는 projects.json 에서 센다: 공개 저장소가 있는 완성 프로젝트 수 · 그중 Solution Challenge 수. 커밋 합계는 쓰지 않는다.
  * 데이터를 서버에서 받기 전에도 저장소 스냅샷(PROJECTS)으로 먼저 그린다 (섹션이 늦게 끼어들어 화면이 밀리지 않게).
  */
 export function ProjectsSection() {
   const { data } = useProjects()
+  const [expanded, setExpanded] = useState(false)
   const list = (data ?? PROJECTS).filter(isPublicProject)
   const { done, solutionChallenge } = projectCounts(list)
   if (done === 0) return null
@@ -89,8 +95,19 @@ export function ProjectsSection() {
     FEATURED_PROJECTS.big,
     BIG,
   )
-  const byId = new Map(list.filter((p) => p.status === 'done').map((p) => [p.id, p]))
-  const icons = FEATURED_PROJECTS.icons.map((id) => byId.get(id)).map((p) => (p && projectCover(p) ? projectIcon(p) : null))
+  const rest = restProjects(
+    list,
+    big.map((p) => p.id),
+  )
+  const hiddenOnPhone = Math.max(0, rest.length - PROJECTS_STORY.phoneFirst)
+
+  // 펼치면 새로 보인 첫 작품으로 초점을 옮긴다 (키보드 · 화면 읽기 사용자가 어디부터인지 알게)
+  const expand = () => {
+    setExpanded(true)
+    requestAnimationFrame(() => {
+      document.getElementById(REST_ID)?.querySelectorAll<HTMLAnchorElement>('li h3 a')[PROJECTS_STORY.phoneFirst]?.focus()
+    })
+  }
 
   return (
     <StorySection
@@ -118,9 +135,20 @@ export function ProjectsSection() {
           ))}
         </ul>
       )}
-      <div className={s.icons}>
-        <IconRow label={PROJECTS_STORY.iconsLabel} items={icons} />
-      </div>
+      {rest.length > 0 && (
+        <div className={s.rest}>
+          <WorkList id={REST_ID} className={s.restList} expanded={expanded} label={PROJECTS_STORY.restLabel}>
+            {rest.map((p) => (
+              <ExhibitCard key={p.id} project={p} withProgram level={3} linkTo="/projects" />
+            ))}
+          </WorkList>
+          {hiddenOnPhone > 0 && !expanded && (
+            <button type="button" className={`btn-secondary ${s.more}`} aria-expanded={false} aria-controls={REST_ID} onClick={expand}>
+              {fill(PROJECTS_STORY.moreOnPhone, { n: hiddenOnPhone })}
+            </button>
+          )}
+        </div>
+      )}
     </StorySection>
   )
 }

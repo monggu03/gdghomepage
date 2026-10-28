@@ -113,6 +113,12 @@ export function pickProjects(projects: readonly Project[], ids: readonly string[
   return [...picked, ...rest].slice(0, n)
 }
 
+/** 큰 타일 아래 '나머지 전부' 목록: 완성 프로젝트 중 이미 크게 건 것(shownIds)을 빼고 최근 것부터 */
+export function restProjects(projects: readonly Project[], shownIds: readonly string[]): Project[] {
+  const shown = new Set(shownIds)
+  return projects.filter((p) => p.status === 'done' && !shown.has(p.id)).sort(recent)
+}
+
 /** 자주 묻는 질문 n개: 고른 id 순서대로, 모자라면 출처가 있는 다른 질문으로 채운다 (common/JoinStrip 이 쓴다. 이름 · 모양을 바꾸지 않는다) */
 export function pickFaqs<T extends { id: string; source?: string }>(faqs: readonly T[], ids: readonly string[], n: number): T[] {
   const sourced = faqs.filter((f) => Boolean(f.source))
