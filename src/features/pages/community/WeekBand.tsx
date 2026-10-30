@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { SITE } from '@/config/site'
 import type { ScheduleEvent } from '@/domain/types'
-import { StoryHead, Ticket } from '@/features/common'
+import { StoryHead } from '@/features/common'
+import { LedTicket } from '@/features/signboard/LedBoard'
 import { monthDay, weekday } from '@/lib/date'
 import { REGULAR_SESSION, type WeekState } from './thisWeek'
 import c from './community.module.css'
@@ -100,14 +101,14 @@ export function WeekBand({ week, timeOf, regular }: { week: WeekState; timeOf: (
         />
         <div className={c.weekBody}>
           {big && (
-            <Ticket
+            <LedTicket
               size="large"
-              surface="dark"
               kicker={status === 'meet' ? '이번 주 모임' : '다음 모임'}
               date={big.date}
               endDate={big.endDate}
               title={big.title}
               meta={meta}
+              place={big.place}
               href={big.url ?? undefined}
             />
           )}

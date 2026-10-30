@@ -455,6 +455,27 @@
   display: grid;
   gap: 32px;
 }
+/* 기수를 바꿀 때: 페이지 좌우 밀기와 같은 문법을 작게 (거리 32px · 240ms · 튕김 없음). 처음 열 때는 data-dir 이 없어 그대로 */
+@keyframes genIn {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--gen-dir) * 32px));
+  }
+}
+.genSlide[data-dir] {
+  animation: genIn 240ms var(--ease) both;
+}
+.genSlide[data-dir='next'] {
+  --gen-dir: 1;
+}
+.genSlide[data-dir='prev'] {
+  --gen-dir: -1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .genSlide[data-dir] {
+    animation: none;
+  }
+}
 .genIntro {
   display: grid;
   gap: 12px;

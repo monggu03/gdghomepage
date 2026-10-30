@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { recruitStatus } from '@/content/recruitingStatus'
 import { HERO } from '@/content/story'
 import { CampusScene } from '@/features/campus/CampusScene'
+import { NightContext } from '@/features/campus/nightContext'
+import { NightLight } from '@/features/fx/NightLight'
+import { useTimeOfDay } from '@/features/fx/useTimeOfDay'
 import { useSceneFit, type SceneLayout } from '@/features/campus/useSceneFit'
 import { usePlacePreview, usePlacePreviewState } from '@/features/layout/placePreview'
 import { useIsNarrow, useMediaQuery } from '@/hooks/useMediaQuery'
@@ -49,6 +52,8 @@ export function HeroSection() {
   const watch = useMemo(() => [panelRef], [])
   // 지도가 화면 밖이면 반복 애니메이션(깃발, 진행 중 표시)을 멈춘다
   const offscreen = useOffscreen(frameRef)
+  // 한국 시간 밤(19–06시)이면 지도도 밤. 불은 실제로 진행 중인 곳에만 켜진다 (DESIGN 6장)
+  const night = useTimeOfDay() === 'night'
 
   const getLayout = useCallback(
     (svg: DOMRect): SceneLayout => {
@@ -81,10 +86,10 @@ export function HeroSection() {
   }
 
   return (
-    <section className={s.hero} aria-labelledby="hero-title">
+    <section className={s.hero} aria-labelledby="hero-title" data-story="hero" data-tod={night ? 'night' : 'day'}>
       {/* 글자 판이 먼저 (읽는 순서 · Tab 순서): 이름 → 소개 → 버튼 → 지도의 건물들 */}
-      <div className={`container ${s.top}`}>
-        <div ref={panelRef} className={s.panel}>
+      <div className={`container ${s.top} ${night ? 'on-dark' : ''}`}>
+        <div ref={panelRef} className={s.panel} data-story="panel">
           <h1 id="hero-title" className={s.title}>
             {/* TODO(로고): 공식 로고 파일을 받으면 이름 앞에 둔다 (layout/BrandMark 와 같은 파일) */}
             <span className={s.wordmark}>{HERO.name}</span>
@@ -134,17 +139,20 @@ export function HeroSection() {
       </div>
 
       {/* 지도 = 사이트맵. 넓은 화면은 첫 블록 전체 배경, 좁은 화면은 글자 판 아래. 안의 건물 · 광장 깃발이 키보드로 고를 수 있는 버튼이다 */}
-      <div ref={frameRef} className={s.map} data-paused={offscreen || undefined} onClick={onMapClick} onKeyDown={onMapKey}>
-        <CampusScene
-          svgRef={svgRef}
-          viewBox={fit.viewBox}
-          pinScale={fit.pinScale}
-          flipRightPins={narrow}
-          compactPins={narrow}
-          walkers={phone ? 2 : 6}
-          highlightSelected={previewOpen}
-        />
-        <div className={s.wash} aria-hidden="true" />
+      <div ref={frameRef} className={s.map} data-story="map" data-paused={offscreen || undefined} onClick={onMapClick} onKeyDown={onMapKey}>
+        <NightContext value={night}>
+          <CampusScene
+            svgRef={svgRef}
+            viewBox={fit.viewBox}
+            pinScale={fit.pinScale}
+            flipRightPins={narrow}
+            compactPins={narrow}
+            walkers={phone ? 2 : 6}
+            highlightSelected={previewOpen}
+          />
+        </NightContext>
+        {night && <NightLight />}
+        <div className={s.wash} aria-hidden="true" data-story="wash" />
         <PlacePopover frameRef={frameRef} sheet={phone} />
       </div>
     </section>

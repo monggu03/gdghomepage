@@ -1,67 +1,59 @@
-import { iso, shade, type Point3 } from '@/lib/iso'
-import { Poly } from '../primitives'
+import { line3, prismX, slab, ZK, type V3 } from '../anatomy/kit'
+import { Line, MixedSolid, Solid } from '../anatomy/draw'
+import { placePaint } from '../anatomy/paint'
 import { ROOF_RISE } from './heights'
 import { GLASS, type RoofProps } from './types'
-import s from '../campus.module.css'
 
 const RISE = ROOF_RISE.arch
-const SEGMENTS = 12
+const SEGMENTS = 18
+/** 지붕을 가로지르는 골(띠) 수 */
+const RIBS = 5
 
 /**
- * 아치 지붕 + 끝 벽 아치 창: 여럿이 모이는 체육관 · 행사장 느낌.
- * 지붕만 장소색이고 끝 벽은 오른쪽 벽과 같은 중립색이다.
+ * 아치 지붕 (anatomy 방식): 반타원 단면을 x 로 민 곡면 하나. 곡면 조각은 빛 방향대로 네 단으로 칠하고(원기둥과 같은 규칙),
+ * 조각 사이 접힌 선은 긋지 않는다. 골 띠는 처마에서 실루엣까지 끝에서 끝으로, 앞 처마에 빗물받이.
+ * 끝벽은 중립색, 아치 창은 부채꼴 창살.
  */
 export function ArchRoof({ fp, color, top, glass = GLASS }: RoofProps) {
   const { x, y, w, d } = fp
   const R = d / 2
   const yc = y + R
   const at = (th: number): [number, number] => [yc - R * Math.cos(th), top + RISE * Math.sin(th)]
-  // 보는 쪽(+y, 위)을 향한 면만 그린다. 뒤쪽 면은 앞쪽 면에 가려진다.
-  const facing = (th: number) => -Math.cos(th) / R + Math.sin(th) / RISE > 0
-
-  const strips = Array.from({ length: SEGMENTS }, (_, i) => {
-    const t0 = (Math.PI * i) / SEGMENTS
-    const t1 = (Math.PI * (i + 1)) / SEGMENTS
-    const tm = (t0 + t1) / 2
-    if (!facing(tm)) return null
-    const ny = -Math.cos(tm) / R
-    const nz = Math.sin(tm) / RISE
-    const up = Math.max(0, nz / Math.hypot(ny, nz)) // 1 = 위를 봄, 0 = 앞을 봄
-    const [ya, za] = at(t0)
-    const [yb, zb] = at(t1)
-    // 빛이 위에서 오므로 꼭대기 쪽 띠가 밝다. 띠 사이 경계가 보이지 않게 같은 색 테두리를 준다
-    const fill = shade(color, -0.1 + 0.22 * up)
-    return <Poly key={i} pts={[[x, ya, za], [x + w, ya, za], [x + w, yb, zb], [x, yb, zb]]} fill={fill} stroke={fill} strokeWidth={0.6} />
+  const section = Array.from({ length: SEGMENTS + 1 }, (_, i) => at((Math.PI * i) / SEGMENTS))
+  const roof = placePaint(color)
+  // 보는 쪽을 향한 곡면만 (anatomy 카메라: 높이를 ZK 배 해서 법선을 잰다)
+  const facing = (th: number) => -Math.cos(th) * RISE * ZK * 0.612 + Math.sin(th) * R * 0.5 > 0
+  const ribs = Array.from({ length: RIBS }, (_, i) => {
+    const xx = x + (w * (i + 1)) / (RIBS + 1)
+    const pts: V3[] = []
+    for (let j = 0; j <= 48; j++) {
+      const th = (Math.PI * j) / 48
+      if (!facing(th)) continue
+      const [yy, zz] = at(th)
+      pts.push([xx, yy, zz])
+    }
+    return line3(pts)
   })
-
-  // 지붕을 가로지르는 골 두 줄
-  const ribs = [1 / 3, 2 / 3].map((f) => {
-    const xx = x + w * f
-    const line = Array.from({ length: 25 }, (_, i) => (Math.PI * i) / 24)
-      .filter(facing)
-      .map((th) => {
-        const [yy, zz] = at(th)
-        return iso(xx, yy, zz).map((v) => v.toFixed(1)).join(',')
-      })
-      .join(' ')
-    return <polyline key={f} points={line} fill="none" stroke={shade(color, -0.2)} strokeWidth={1.2} strokeLinecap="round" />
-  })
-
-  const endWall: Point3[] = Array.from({ length: SEGMENTS + 1 }, (_, i) => {
-    const [yy, zz] = at((Math.PI * i) / SEGMENTS)
-    return [x + w, yy, zz]
-  })
-  const archWindow: Point3[] = Array.from({ length: 11 }, (_, i) => {
-    const th = (Math.PI * i) / 10
-    return [x + w + 0.01, yc - 0.85 * Math.cos(th), top + 0.08 + 0.58 * Math.sin(th)]
-  })
-
+  const win = (th: number, r = 0.85): V3 => [x + w + 0.006, yc - r * Math.cos(th), top + 0.08 + 0.62 * (r / 0.85) * Math.sin(th)]
+  const windowD = line3(Array.from({ length: 17 }, (_, i) => win((Math.PI * i) / 16)), true)
+  const spokes = [0.25, 0.5, 0.75].map((f) => line3([[x + w + 0.006, yc, top + 0.08], win(Math.PI * f)])).join('') + line3(Array.from({ length: 9 }, (_, i) => win((Math.PI * i) / 8, 0.36)))
   return (
     <>
-      {strips}
-      {ribs}
-      <Poly className={`${s.wallR} ${s.edge}`} pts={endWall} />
-      <Poly pts={archWindow} fill={glass.R} data-glass="R" className={s.edge} />
+      <MixedSolid
+        faces={prismX(section, x, x + w, { smooth: true, sides: (i) => (i < SEGMENTS ? 'roof' : undefined) })}
+        paints={{ roof }}
+        edge={roof.edge}
+        inner={
+          <>
+            <Line d={ribs.join('')} color={roof.crease} />
+            <path d={windowD} style={{ fill: glass.R }} data-glass="R" />
+            <Line d={spokes} tone="lo" />
+            <Line d={windowD} tone="mid" />
+          </>
+        }
+      />
+      {/* 앞 처마 빗물받이 */}
+      <Solid paths={slab({ x: x - 0.03, y: y + d - 0.03, w: w + 0.06, d: 0.07, r: 0.02 }, top - 0.035, 0.05, 2, 0.01)} tone="mid" />
     </>
   )
 }

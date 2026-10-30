@@ -3,7 +3,8 @@ import { SITE, SPRINT } from '@/config/site'
 import { CHAPTER, EVENTS } from '@/content'
 import { BAND, SPRINT_LINE, WAYS, type Way } from '@/content/story'
 import { useSchedule } from '@/data/queries'
-import { StorySection, Ticket } from '@/features/common'
+import { StorySection } from '@/features/common'
+import { LedTicket } from '@/features/signboard/LedBoard'
 import { Term } from '@/features/glossary/Term'
 import { useToday } from '@/hooks/useToday'
 import { monthDay } from '@/lib/date'
@@ -97,7 +98,7 @@ export function HowSection() {
           )
         })}
       </ul>
-      {next && <Ticket className={s.ticket} kicker={BAND.next.kicker} date={next.date} endDate={next.endDate} title={next.title} to={BAND.next.to} surface="dark" />}
+      {next && <LedTicket className={s.ticket} kicker={BAND.next.kicker} date={next.date} endDate={next.endDate} title={next.title} place={next.place} to={BAND.next.to} />}
     </StorySection>
   )
 }

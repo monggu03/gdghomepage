@@ -8,6 +8,7 @@ import { Dotted, LiveLink } from './ExhibitCard'
 import { assetUrl, isWorkImage, languageSegments, monthSpan, outLinks, projectGallery, repoPath } from './exhibit'
 import { LanguageBar } from './Plate'
 import { sheetSearch } from './sheetLink'
+import { morphClose } from './sheetMorph'
 import c from './sheet.module.css'
 
 const PROJECT_COLOR = placeColor('projects')
@@ -19,7 +20,7 @@ const dotted = (ymd: string) => ymd.replaceAll('-', '.')
 function Shot({ img, project, first }: { img: ProjectImage; project: Project; first: boolean }) {
   return (
     <figure className={c.shot} data-kind={img.kind}>
-      <div className={c.frame}>
+      <div className={c.frame} data-morph-target={first ? 'media' : undefined}>
         <img src={assetUrl(img.src)} alt={img.alt} width={img.width} height={img.height} loading={first ? 'eager' : 'lazy'} decoding="async" />
       </div>
       <figcaption className={c.shotCaption}>
@@ -70,7 +71,12 @@ export function ProjectSheet({
     if (ref.current?.open) headingRef.current?.focus({ preventScroll: true })
   }, [id, ref])
 
-  const close = () => ref.current?.close()
+  /** 닫기: 연 작품이 화면에 보이면 그 자리로 돌아가며 닫힌다 (sheetMorph). 아니면 그냥 닫는다 */
+  const close = () => {
+    const d = ref.current
+    if (!d) return
+    if (!id || !morphClose(d, id, () => d.close())) d.close()
+  }
   /** 바깥(어두운 바탕)을 누르면 닫는다 */
   const onBackdrop = (e: MouseEvent<HTMLDialogElement>) => {
     if (e.target !== e.currentTarget) return
@@ -91,6 +97,12 @@ export function ProjectSheet({
       ref={ref}
       className={c.sheet}
       aria-labelledby="project-sheet-title"
+      data-project-sheet
+      onCancel={(e) => {
+        // Esc 도 닫기 버튼과 같은 길로 (제자리로 돌아가며 닫힘)
+        e.preventDefault()
+        close()
+      }}
       onClose={() => {
         restoreFocus()
         onClosed()

@@ -1,10 +1,11 @@
 import { Fragment, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Project, ProjectImage } from '@/domain/types'
 import { programName } from '../projectGroups'
 import { assetUrl, isLive, projectCover, projectGallery, stageShots } from './exhibit'
 import { Plate } from './Plate'
 import { SHEET_STATE, sheetSearch } from './sheetLink'
+import { morphOpen } from './sheetMorph'
 import c from './exhibit.module.css'
 
 /** '3기 · 2026' 처럼 · 로 잇되, '·' 는 앞 낱말에 붙여 줄이 점으로 시작하지 않게 */
@@ -54,6 +55,7 @@ export function LiveLink({ project, tone = 'inline', className = '' }: { project
  * linkTo: 다른 페이지(홈)에서 쓸 때 그 창이 있는 주소('/projects'). 그때는 /projects?p=id 로 옮겨 가서 창이 열린다.
  */
 function OpenLink({ project, className, linkTo }: { project: Project; className: string; linkTo?: string }) {
+  const navigate = useNavigate()
   if (linkTo) {
     return (
       <Link className={className} to={{ pathname: linkTo, search: sheetSearch(project.id) }}>
@@ -62,7 +64,21 @@ function OpenLink({ project, className, linkTo }: { project: Project; className:
     )
   }
   return (
-    <Link className={className} to={{ search: sheetSearch(project.id) }} state={SHEET_STATE} preventScrollReset aria-haspopup="dialog" data-sheet-card={project.id}>
+    <Link
+      className={className}
+      to={{ search: sheetSearch(project.id) }}
+      state={SHEET_STATE}
+      preventScrollReset
+      aria-haspopup="dialog"
+      data-sheet-card={project.id}
+      onClick={(e) => {
+        // 새 창 · 새 탭으로 여는 누름은 그대로 둔다
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+        const card = e.currentTarget.closest<HTMLElement>('[data-morph]')
+        const opened = morphOpen(card, () => navigate({ search: sheetSearch(project.id) }, { state: SHEET_STATE, preventScrollReset: true, flushSync: true }))
+        if (opened) e.preventDefault()
+      }}
+    >
       {project.name}
     </Link>
   )
@@ -80,7 +96,7 @@ function Stage({ project, eager }: { project: Project; eager: boolean }) {
   const shots = stageShots(projectGallery(project))
   if (shots) {
     return (
-      <div className={c.stage} data-stage="duo">
+      <div className={c.stage} data-stage="duo" data-morph-media>
         <Shot img={shots.wide} className={c.desk} eager={eager} />
         <Shot img={shots.tall} className={c.phone} eager={eager} />
       </div>
@@ -88,7 +104,7 @@ function Stage({ project, eager }: { project: Project; eager: boolean }) {
   }
   const cover = projectCover(project)
   return (
-    <div className={c.stage} data-stage={cover?.kind ?? 'type'}>
+    <div className={c.stage} data-stage={cover?.kind ?? 'type'} data-morph-media>
       {cover ? <Shot img={cover} className={c.single} eager={eager} /> : <Plate project={project} className={c.stagePlate} />}
     </div>
   )
@@ -103,7 +119,7 @@ export function FeaturedWork({ project, eager = false, level = 4 }: { project: P
   const Heading = level === 3 ? 'h3' : 'h4'
   const stack = project.stack ?? []
   return (
-    <div className={c.feature}>
+    <div className={c.feature} data-morph="media">
       <div className={c.featureText}>
         <Heading className={c.featureName}>
           <OpenLink project={project} className={c.open} />
@@ -146,7 +162,7 @@ export function ExhibitCard({ project, withProgram = false, level = 4, linkTo }:
     ? [<span key="y" className="num">{project.year}</span>, programName(project), ...(project.stack ?? []).slice(0, 2)]
     : (project.stack ?? []).slice(0, 3)
   return (
-    <li className={c.work}>
+    <li className={c.work} data-morph="box">
       <Plate project={project} className={c.icon} />
       <div className={c.label}>
         <Heading className={c.name}>

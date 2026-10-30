@@ -349,6 +349,62 @@ button[aria-pressed='true'] .count {
   color: #c9cdd2;
 }
 
+/* 누른 칸 먹색 판 (ToggleGroup): 흰 글자 사본 한 줄을 누른 칸 크기로 잘라 위에 얹는다. 다른 칸을 누르면 잘린 창이 미끄러진다 */
+.segmented[data-slide] {
+  position: relative;
+}
+.segmented[data-slide] button[aria-pressed='true'] {
+  background: var(--paper);
+  color: var(--ink-700);
+}
+/* 판 아래 진짜 칸은 보통 칸처럼 (판이 지나가는 동안 옅은 숫자 · 먹색 칸 선이 비치지 않게) */
+.segmented[data-slide] button[aria-pressed='true'] .count {
+  color: var(--ink-500);
+}
+.segmented[data-slide] button[aria-pressed='true'] + button {
+  border-left-color: var(--line);
+}
+.segInk {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--ink-900);
+  color: #fff;
+  pointer-events: none;
+}
+.segInk[data-ready] {
+  transition: clip-path var(--dur-open) var(--ease);
+}
+/* 진짜 칸과 같은 크기: 같은 글자 · 안쪽 여백 · 칸 사이 1px */
+.segInkItem {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  font: var(--t-ui);
+  white-space: nowrap;
+}
+.segInkItem + .segInkItem {
+  border-left: 1px solid transparent;
+}
+.segInkItem .count {
+  color: #c9cdd2;
+}
+/* 초점 링은 먹색 판 위에 보여야 한다: 초점 받은 칸만 판 위로 올리고 바탕을 비운다 */
+.segmented[data-slide] button:focus-visible {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+.segmented[data-slide] button[aria-pressed='true']:focus-visible {
+  color: #fff;
+}
+.segmented[data-slide] button[aria-pressed='true']:focus-visible .count {
+  color: #c9cdd2;
+}
+
 /* ── 사실 목록 (준비 중) ── */
 .facts {
   border-top: 1px solid var(--ink-900);
@@ -584,6 +640,7 @@ button[aria-pressed='true'] .count {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .segInk[data-ready],
   .segmented button,
   .rowArrow,
   .destination::after {

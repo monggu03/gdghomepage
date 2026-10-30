@@ -6,13 +6,15 @@ import { GLASS, LIT } from '@/features/campus/roofs/types'
 import { sceneryItems, type SceneItem } from '@/features/campus/scenery'
 import { QUIET_ROOF, StaticBuilding } from '@/features/campus/StaticBuilding'
 import { useWalkers } from '@/features/campus/walkers/useWalkers'
+import { PEEP_DEFS } from '@/features/campus/peeps/peepArt'
 import { Hoarding, Scaffold } from './Construction'
+import { ConstructionCrew } from './ConstructionCrew'
 import type { BuildingLook, HeroPlace } from './look'
 import { ScreenSlide } from './ScreenSlide'
 import s from './placehero.module.css'
 
 /** 불 꺼진 창 (문 닫음 · 공사 중): 낮 유리보다 한 단 어둡고 덜 파랗다 */
-const DARK = { L: '#c5ccd4', R: '#aab4bf' } as const
+const DARK = { L: 'var(--c-glass-shut-l)', R: 'var(--c-glass-shut-r)' } as const
 
 interface Props {
   place: HeroPlace
@@ -62,6 +64,7 @@ export function HeroScene({ place, look, screen, viewBox, walkers, animate }: Pr
               <>
                 <Scaffold fp={fp} />
                 <Hoarding fp={fp} color={p.color} />
+                <ConstructionCrew fp={fp} />
               </>
             )}
           </g>
@@ -72,7 +75,8 @@ export function HeroScene({ place, look, screen, viewBox, walkers, animate }: Pr
   }, [place, state, lit, date, title])
 
   return (
-    <svg className={s.scene} viewBox={viewBox} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<svg className={`${s.scene} campus-iso`} viewBox={viewBox} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs dangerouslySetInnerHTML={{ __html: PEEP_DEFS }} />
       <Ground />
       <g ref={worldRef}>
         {items.map((it) => (

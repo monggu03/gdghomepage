@@ -73,6 +73,7 @@
 .pole { stroke: var(--ink-500); stroke-width: 2; stroke-linecap: round; }
 .finial { fill: var(--ink-500); }
 .cloth { fill: var(--gen); }
+.clothEdge { fill: none; stroke: #c24f0b; stroke-width: 0.6; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .clothNum { fill: none; stroke: var(--on-gen); stroke-width: 2.6; stroke-linecap: butt; stroke-linejoin: miter; }
 /* 세션에 한 번, 깃발이 화면에 들어오면 천이 깃대를 따라 올라간다. 튕김 없음 */
 .lowered { transform: translateY(var(--drop, 40px)); }
@@ -139,3 +140,74 @@
   .plateBg,
   .plateText { transition: none; }
 }
+
+/* 손글씨 층 (PenLayer): rough.js 선 + 나눔손글씨 펜. 선은 장소색, 글씨는 먹색 */
+.pen { pointer-events: none; }
+.penInk path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.penText {
+  font-family: 'Nanum Pen Script', var(--font-kr);
+  fill: var(--ink-900);
+  letter-spacing: 0;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+/* 처음 한 번 그려진다: 선은 stroke-dashoffset, 글씨는 왼쪽에서 오른쪽으로 걷힌다 */
+.penAnimate .penInk path {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: pen-draw var(--dur, 0.6s) cubic-bezier(0.55, 0.1, 0.35, 1) var(--delay, 0s) forwards;
+}
+.penAnimate .penText {
+  clip-path: inset(-20% 100% -20% 0);
+  animation: pen-write 0.55s steps(14, end) var(--delay, 0s) forwards;
+}
+@keyframes pen-draw { to { stroke-dashoffset: 0; } }
+@keyframes pen-write { to { clip-path: inset(-20% -2% -20% 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .penAnimate .penInk path, .penAnimate .penText { animation: none; stroke-dashoffset: 0; clip-path: none; }
+}
+
+/*
+ * ── 밤 (features/fx/useTimeOfDay): 한국 시간 19–06시.
+ * 땅 · 벽 · 유리 · 나무는 어둡게. 안내판은 흰 판 그대로(불 켜진 간판). 불은 실제로 진행 중인 곳(data-lit, 예: G-Sprint 작업실)에만.
+ * 지붕 장소색은 Building 이 NightContext 로 어둡게 칠한다.
+ */
+:global([data-tod='night']) {
+  --scene-grass: #1c2925;
+  --scene-grass-line: #24332d;
+  --scene-walk: #242a33;
+  --scene-plaza: #2b313b;
+  --scene-plaza-line: #3a414c;
+  --wall-top: #4a515d;
+  --wall-left: #373d48;
+  --wall-right: #2b303a;
+}
+:global([data-tod='night']) .ground { fill: #15191f; }
+:global([data-tod='night']) .edge { stroke: #4c5360; }
+:global([data-tod='night']) .padT { fill: #2b313b; }
+:global([data-tod='night']) [data-glass='L'] { fill: #2c3546; }
+:global([data-tod='night']) [data-glass='R'] { fill: #232b39; }
+:global([data-tod='night']) .door { fill: #0f1216; }
+:global([data-tod='night']) .shadow,
+:global([data-tod='night']) .treeShadow { fill: rgba(0, 0, 0, 0.28); }
+:global([data-tod='night']) .trunk { fill: #4a4038; }
+:global([data-tod='night']) .crown { fill: #2e4a3d; }
+:global([data-tod='night']) .crownLit { fill: #3a5b4a; }
+:global([data-tod='night']) .crownShade { fill: #243b31; }
+:global([data-tod='night']) .mullionL { stroke: #373d48; }
+:global([data-tod='night']) .mullionR { stroke: #2b303a; }
+:global([data-tod='night']) .pole,
+:global([data-tod='night']) .finial { stroke: #8a909a; fill: #8a909a; }
+/* 불 켜진 창: 따뜻한 빛이 둘레로 번진다 (SVG 필터, HeroSection 의 #fx-night-glow). 깜빡이지 않는다 */
+:global([data-tod='night']) [data-lit] { filter: url(#fx-night-glow); }
+/* 밤: 손글씨는 밝은 글씨 + 밤 바탕색 테두리 */
+:global([data-tod='night']) .penText { fill: #eef0f3; stroke: #1b2027; }
+/* 밤: 안내판 지시선은 먹색이면 땅에 묻히므로 옅은 회색 */
+:global([data-tod='night']) .leader { stroke: #c9cdd3; }
+:global([data-tod='night']) .leaderFoot { fill: #c9cdd3; }

@@ -2,7 +2,7 @@ import { useMemo, useRef, type ReactNode, type RefObject } from 'react'
 import { PLACES } from '@/config/places'
 import type { PlaceId } from '@/domain/types'
 import { useReducedMotion } from '@/hooks/useMediaQuery'
-import { depthOfBox, depthOfPoint } from '@/lib/iso'
+import { depthOfBox, depthOfPoint, iso } from '@/lib/iso'
 import { useCampus, useCampusActions } from '@/state/useCampus'
 import { Building } from './Building'
 import { FlagPlaza } from './FlagPlaza'
@@ -12,6 +12,9 @@ import { Ground } from './Ground'
 import { BENCHES, FLAG_AT, TREES } from './layout'
 import { Sign } from './Sign'
 import { useWalkers } from './walkers/useWalkers'
+import { PEEP_DEFS } from './peeps/peepArt'
+import { BenchSitter } from './peeps/BenchSitter'
+import { PenLayer } from './PenLayer'
 import s from './campus.module.css'
 
 interface Props {
@@ -49,7 +52,10 @@ export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPi
   const { select, hover } = useCampusActions()
   const reduceMotion = useReducedMotion()
   const worldRef = useRef<SVGGElement>(null)
-  useWalkers(worldRef, walkers, !reduceMotion)
+  // 마우스를 올린 건물의 화면 x (사람들이 그쪽을 돌아본다)
+  const hoverFp = hovered ? PLACES.find((p) => p.id === hovered)?.footprint : undefined
+  const focusX = hoverFp ? iso(hoverFp.x + hoverFp.w / 2, hoverFp.y + hoverFp.d / 2)[0] : null
+  useWalkers(worldRef, walkers, !reduceMotion, focusX)
 
   const searching = hits !== null
   const isHit = (id: PlaceId) => searching && (hits?.[id] ?? 0) > 0
@@ -61,6 +67,8 @@ export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPi
     () => [
       ...TREES.map(([x, y, size, kind], i) => ({ key: `tree-${i}`, depth: depthOfPoint(x, y) + 0.05, node: <Tree x={x} y={y} size={size} kind={kind} /> })),
       ...BENCHES.map(([x, y, dir], i) => ({ key: `bench-${i}`, depth: depthOfPoint(x, y) + 0.9, node: <Bench x={x} y={y} dir={dir} /> })),
+      // 벤치에 앉은 사람 (Open Peeps 앉은 자세). 벤치 바로 앞에 그린다
+      ...BENCHES.map(([x, y, dir], i) => ({ key: `sitter-${i}`, depth: depthOfPoint(x, y) + 0.95, node: <BenchSitter x={x} y={y} dir={dir} pose={i === 0 ? 'sitA' : 'sitB'} /> })),
     ],
     [],
   )
@@ -88,12 +96,13 @@ export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPi
   return (
     <svg
       ref={svgRef}
-      className={`${s.scene} ${className}`}
+      className={`${s.scene} campus-iso ${className}`}
       viewBox={viewBox}
       preserveAspectRatio="xMinYMin meet"
       role="group"
       aria-label="GDGoC DGU 캠퍼스 지도. 건물이나 광장 깃발을 고르면 미리보기가 열립니다"
     >
+      <defs dangerouslySetInnerHTML={{ __html: PEEP_DEFS }} />
       <Ground />
       <g ref={worldRef}>
         {statics.map((it) => (
@@ -119,6 +128,8 @@ export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPi
           />
         ))}
       </g>
+      {/* 손글씨 층: 실제 일정 · 숫자만 펜으로 적는다 (지도 위 맨 앞) */}
+      <PenLayer compact={compactPins} animate={!reduceMotion} scale={compactPins ? Math.min(1.5, Math.max(1, k * 0.8)) : 1} />
     </svg>
   )
 }

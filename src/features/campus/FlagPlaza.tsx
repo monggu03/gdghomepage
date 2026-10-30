@@ -5,7 +5,8 @@ import { PLACE_PANEL_ID } from '@/config/ui'
 import { iso } from '@/lib/iso'
 import { FLAG_BASE, FLAG_CLOTH, FLAG_POLE } from './geometry'
 import { FLAG_AT } from './layout'
-import { Box } from './primitives'
+import { corners, cyl, dots, slab, sphere } from './anatomy/kit'
+import { Dots, Solid } from './anatomy/draw'
 import s from './campus.module.css'
 
 /** 깃발에 쓰는 기수 숫자: '4기' → '4' */
@@ -15,6 +16,9 @@ const GEN_NUMBER = SITE.generation.replace(/\D/g, '')
 const RAISED_KEY = 'gdgoc-dgu:flag-raised'
 
 type Raise = 'down' | 'rising' | 'up'
+
+/** 깃대 받침 (격자) */
+const BASE = { x: FLAG_AT[0] - 0.22, y: FLAG_AT[1] - 0.22, w: 0.44, d: 0.44, r: 0.05 }
 
 /**
  * 깃발 올리기는 세션에 한 번만, 그것도 깃발이 화면에 보일 때.
@@ -111,14 +115,18 @@ export const FlagPlaza = memo(function FlagPlaza({ place, selected, hovered, dim
       {/* 깃대가 가늘어서 누르기 어렵다: 보이지 않는 넓은 자리를 깐다 (폰에서도 44px 이상) */}
       <rect x={bx - 24} y={top - len / 2 - 8} width={len + 40} height={by - top + len / 2 + 22} fill="transparent" />
       <g ref={flagRef} className={s.lift}>
-        <Box x={fx - 0.22} y={fy - 0.22} w={0.44} d={0.44} z0={0} h={FLAG_BASE} tone="pad" edge />
-        <line className={s.pole} x1={bx} y1={by} x2={bx} y2={top - 2} />
-        <circle className={s.finial} cx={bx} cy={top - 3.5} r={2.2} />
+        {/* 받침(둥근 모서리 · 깎은 윗선 · 볼트 넷) → 깃대 고리 → 깃대(원기둥) → 꼭지(공) */}
+        <Solid paths={slab(BASE, 0, FLAG_BASE, 4, 0.02)} tone="lo" />
+        <Dots points={dots(corners(BASE, 0.07).map(([px, py]) => [px, py, FLAG_BASE] as const))} size={0.55} />
+        <Solid paths={cyl(fx, fy, 0.075, FLAG_BASE, 0.06, 18, 0.01)} tone="mid" />
+        <Solid paths={cyl(fx, fy, 0.024, FLAG_BASE + 0.06, (FLAG_POLE + 2) / 32 - 0.06, 10)} tone="mid" crease="none" />
+        <Solid paths={sphere([fx, fy, FLAG_BASE + (FLAG_POLE + 3.5) / 32], 0.05, 20)} tone="mid" />
         <g
           className={raise === 'down' ? s.lowered : raise === 'rising' ? s.raise : undefined}
           style={raise === 'up' ? undefined : { ['--drop' as string]: `${(FLAG_POLE - ch - 10).toFixed(0)}px` }}
         >
           <polygon className={s.cloth} points={cloth} />
+          <polygon className={s.clothEdge} points={cloth} />
           {/* 기수 숫자는 글자가 아니라 그림으로 그린다 (버튼 이름 'GDGoC DGU 4기 소개 열기' 와 따로 읽히지 않게) */}
           <g
             className={s.clothNum}
