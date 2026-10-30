@@ -211,3 +211,7 @@
 /* 밤: 안내판 지시선은 먹색이면 땅에 묻히므로 옅은 회색 */
 :global([data-tod='night']) .leader { stroke: #c9cdd3; }
 :global([data-tod='night']) .leaderFoot { fill: #c9cdd3; }
+
+/* 서 있는 사람 발밑 그림자 (peeps/Peep) */
+.peepShadow { fill: rgba(25, 27, 31, 0.13); }
+:global([data-tod='night']) .peepShadow { fill: rgba(0, 0, 0, 0.35); }

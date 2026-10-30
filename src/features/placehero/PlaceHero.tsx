@@ -2,7 +2,7 @@ import { useId, useRef, type CSSProperties, type MouseEvent, type ReactNode } fr
 import { Link } from 'react-router-dom'
 import { PLACE_BY_ID, placeColor } from '@/config/places'
 import { SITE } from '@/config/site'
-import { useMediaQuery, useReducedMotion } from '@/hooks/useMediaQuery'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useToday } from '@/hooks/useToday'
 import { scrollToSection } from '@/features/home/scrollTo'
 import { narrowFrame, viewBoxString, wideFrame, type HeroFrame } from './frame'
@@ -112,7 +112,6 @@ function Row({ row }: { row: DirectoryRow }) {
 export function PlaceHero({ place, eyebrow, title, lead, meta, directory, state, screen, directoryTitle }: PlaceHeroProps) {
   const today = useToday()
   const narrow = useMediaQuery(HERO_STACK_QUERY)
-  const reduceMotion = useReducedMotion()
   const look = buildingLook(place, today, state)
   const headerRef = useRef<HTMLElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -149,7 +148,7 @@ export function PlaceHero({ place, eyebrow, title, lead, meta, directory, state,
 
       <div className={s.place}>
         <div ref={stageRef} className={s.stage}>
-          {frame && <HeroScene place={place} look={look} screen={screen} viewBox={viewBoxString(frame.vb)} walkers={narrow ? 0 : 2} animate={!reduceMotion} />}
+          {frame && <HeroScene place={place} look={look} screen={screen} viewBox={viewBoxString(frame.vb)} people={!narrow} />}
           <span className={s.fadeTop} aria-hidden="true" />
         </div>
         {/* 1024 미만에서는 안내판을 그리지 않는다: 폰에서 목차 판이 첫 화면을 300px 넘게 차지했고, 같은 묶음이 바로 아래 이어진다 */}

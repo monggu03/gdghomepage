@@ -1,19 +1,17 @@
-import { useMemo, useRef, type ReactNode, type RefObject } from 'react'
+import { useMemo, type ReactNode, type RefObject } from 'react'
 import { PLACES } from '@/config/places'
 import type { PlaceId } from '@/domain/types'
 import { useReducedMotion } from '@/hooks/useMediaQuery'
-import { depthOfBox, depthOfPoint, iso } from '@/lib/iso'
+import { depthOfBox, depthOfPoint } from '@/lib/iso'
 import { useCampus, useCampusActions } from '@/state/useCampus'
 import { Building } from './Building'
 import { FlagPlaza } from './FlagPlaza'
 import { signAlign } from './geometry'
-import { Bench, Tree } from './Greenery'
 import { Ground } from './Ground'
-import { BENCHES, FLAG_AT, TREES } from './layout'
+import { FLAG_AT } from './layout'
 import { Sign } from './Sign'
-import { useWalkers } from './walkers/useWalkers'
 import { PEEP_DEFS } from './peeps/peepArt'
-import { BenchSitter } from './peeps/BenchSitter'
+import { sceneryItems } from './scenery'
 import { PenLayer } from './PenLayer'
 import s from './campus.module.css'
 
@@ -30,8 +28,6 @@ interface Props {
   flipRightPins: boolean
   /** 폰: 지시선 · 여백이 짧은 작은 안내판 (가리는 것은 없다) */
   compactPins?: boolean
-  /** 걷는 사람 수 (데스크톱 6, 폰 2) */
-  walkers?: number
   className?: string
 }
 
@@ -45,17 +41,12 @@ interface StaticItem {
  * 캠퍼스 지도.
  * - 땅 → 정적 물체(건물 · 나무 · 깃발, 앞뒤 순서대로) → 안내판 순서로 쌓는다
  * - 선택 · 호버 · 검색 상태는 CampusState 에서 읽는다 (메뉴 · 패널과 공유)
- * - 사람은 useWalkers 가 정적 물체 사이에 직접 끼워 넣는다
+ * - 사람은 걷지 않는다: 문 앞 · 광장 · 벤치에 몇 명씩 서 있거나 앉아 있다 (scenery)
  */
-export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPins, compactPins = false, walkers = 6, highlightSelected = true, className = '' }: Props) {
+export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPins, compactPins = false, highlightSelected = true, className = '' }: Props) {
   const { selected, hovered, hits } = useCampus()
   const { select, hover } = useCampusActions()
   const reduceMotion = useReducedMotion()
-  const worldRef = useRef<SVGGElement>(null)
-  // 마우스를 올린 건물의 화면 x (사람들이 그쪽을 돌아본다)
-  const hoverFp = hovered ? PLACES.find((p) => p.id === hovered)?.footprint : undefined
-  const focusX = hoverFp ? iso(hoverFp.x + hoverFp.w / 2, hoverFp.y + hoverFp.d / 2)[0] : null
-  useWalkers(worldRef, walkers, !reduceMotion, focusX)
 
   const searching = hits !== null
   const isHit = (id: PlaceId) => searching && (hits?.[id] ?? 0) > 0
@@ -63,15 +54,7 @@ export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPi
   const k = labelScale ?? pinScale
 
   // 장소마다 바뀌는 건 selected/hovered/hit 뿐이다. 나무 · 벤치는 한 번만 만든다.
-  const scenery = useMemo<StaticItem[]>(
-    () => [
-      ...TREES.map(([x, y, size, kind], i) => ({ key: `tree-${i}`, depth: depthOfPoint(x, y) + 0.05, node: <Tree x={x} y={y} size={size} kind={kind} /> })),
-      ...BENCHES.map(([x, y, dir], i) => ({ key: `bench-${i}`, depth: depthOfPoint(x, y) + 0.9, node: <Bench x={x} y={y} dir={dir} /> })),
-      // 벤치에 앉은 사람 (Open Peeps 앉은 자세). 벤치 바로 앞에 그린다
-      ...BENCHES.map(([x, y, dir], i) => ({ key: `sitter-${i}`, depth: depthOfPoint(x, y) + 0.95, node: <BenchSitter x={x} y={y} dir={dir} pose={i === 0 ? 'sitA' : 'sitB'} /> })),
-    ],
-    [],
-  )
+  const scenery = useMemo<StaticItem[]>(() => sceneryItems(true), [])
 
   const statics: StaticItem[] = [
     ...scenery,
@@ -104,7 +87,7 @@ export function CampusScene({ svgRef, viewBox, pinScale, labelScale, flipRightPi
     >
       <defs dangerouslySetInnerHTML={{ __html: PEEP_DEFS }} />
       <Ground />
-      <g ref={worldRef}>
+      <g>
         {statics.map((it) => (
           <g key={it.key} data-depth={it.depth.toFixed(2)}>
             {it.node}

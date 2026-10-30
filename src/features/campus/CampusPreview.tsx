@@ -178,7 +178,7 @@ function MapPreview() {
   const fit = useSceneFit(svgRef, getLayout, { narrow, flipPins: narrow })
   return (
     <div style={{ position: 'relative', height: narrow ? 320 : 'clamp(440px, 60vh, 640px)', overflow: 'clip' }}>
-      <CampusScene svgRef={svgRef} viewBox={fit.viewBox} pinScale={fit.pinScale} labelScale={fit.labelScale} flipRightPins={narrow} compactPins={narrow} walkers={narrow ? 3 : 6} />
+      <CampusScene svgRef={svgRef} viewBox={fit.viewBox} pinScale={fit.pinScale} labelScale={fit.labelScale} flipRightPins={narrow} compactPins={narrow} />
     </div>
   )
 }

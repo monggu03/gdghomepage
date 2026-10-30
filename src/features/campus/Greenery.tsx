@@ -1,36 +1,39 @@
-import { memo } from 'react'
-import { iso } from '@/lib/iso'
+import { memo, useContext } from 'react'
+import { iso, shade } from '@/lib/iso'
 import type { TreeKind } from './layout'
-import { cone, cyl, ring, slab, sphere, type Plan } from './anatomy/kit'
-import { Line, Solid, type Paint } from './anatomy/draw'
+import { ring, slab, type Plan } from './anatomy/kit'
+import { Line, MixedSolid, Solid, type Paint } from './anatomy/draw'
+import { NightContext } from './nightContext'
+import { useSeason } from './trees/season'
+import { treeColors, treeSolids, type TreeRole } from './trees/treeModel'
 import s from './campus.module.css'
 
-/** 수관: 잔디(--scene-grass)보다 진하고 장소색 초록(--place-recruits)과는 다른 차분한 초록, 네 단 */
-const CROWN: Paint = { top: 'var(--c-crown-top)', shades: ['var(--c-crown-0)', 'var(--c-crown-1)', 'var(--c-crown-2)', 'var(--c-crown-3)'], edge: 'var(--c-crown-edge)' }
-const BARK: Paint = { top: 'var(--c-bark-top)', shades: ['var(--c-bark-0)', 'var(--c-bark-1)', 'var(--c-bark-2)', 'var(--c-bark-3)'], edge: 'var(--c-bark-edge)' }
+/** 나무 색 한 벌 → anatomy 네 단 칠 (윗면이 가장 밝고, 빛 반대쪽 면이 가장 어둡다) */
+function treePaint(c: string): Paint {
+  return { top: shade(c, 0.2), shades: [shade(c, -0.2), shade(c, -0.09), shade(c, 0.02), shade(c, 0.11)], edge: shade(c, -0.42), crease: shade(c, -0.12) }
+}
 
 /**
- * 나무 한 그루 (anatomy 방식): 땅 그림자 · 심은 자리 고리 → 줄기(원기둥) → 수관(공 또는 원뿔, 빛 쪽 네 단).
- * 공은 anatomy sphereOf 처럼 빛 쪽 구면 모자 네 장으로 매끈하게 칠한다.
+ * 나무 한 그루 (anatomy 방식): 땅 그림자 · 심은 자리 고리 → 깎은 면 입체들(줄기 · 가지 · 수관 덩어리, 뒤 → 앞).
+ * 모양은 trees/treeModel (3D 지도와 같은 모양), 색은 계절(한국 날짜, ?season=) · 밤을 따른다.
  */
 export const Tree = memo(function Tree({ x, y, size = 1, kind }: { x: number; y: number; size?: number; kind: TreeKind }) {
+  const night = useContext(NightContext)
+  const season = useSeason()
   const [bx, by] = iso(x, y, 0)
   const k = size
+  const colors = treeColors(kind, season, night)
+  const paints = Object.fromEntries((Object.keys(colors) as TreeRole[]).map((r) => [r, treePaint(colors[r])])) as Record<TreeRole, Paint>
+  const solids = treeSolids(kind, x, y, k, season)
+  const leafEdge = paints[kind === 'cherry' && season === 'spring' ? 'bloom' : 'leaf'].edge
   return (
-    <g>
+    <g data-tree={kind}>
       <ellipse className={s.treeShadow} cx={bx + 7 * k} cy={by + 1.5 * k} rx={11 * k} ry={4.2 * k} />
       <Line d={ring(x, y, 0.11 * k, 0, 14)} tone="faint" />
-      {kind === 'round' ? (
-        <>
-          <Solid paths={cyl(x, y, 0.032 * k, 0, 0.36 * k, 8)} paint={BARK} crease="none" />
-          <Solid paths={sphere([x, y, 0.6 * k], 0.28 * k, 24)} paint={CROWN} />
-        </>
-      ) : (
-        <>
-          <Solid paths={cyl(x, y, 0.03 * k, 0, 0.2 * k, 10)} paint={BARK} crease="none" />
-          <Solid paths={cone(x, y, 0.24 * k, 0.125 * k, 1.06 * k, 16)} paint={CROWN} />
-        </>
-      )}
+      {solids.map((solid, i) => {
+        const bark = solid.faces.every((f) => f.role === 'bark')
+        return <MixedSolid key={i} faces={solid.faces} paints={paints} edge={bark ? paints.bark.edge : leafEdge} crease={bark ? paints.bark.crease : paints.leaf.crease} />
+      })}
     </g>
   )
 })
