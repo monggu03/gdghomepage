@@ -1,13 +1,6 @@
 import { memo } from 'react'
 import { iso } from '@/lib/iso'
-import { PEEPS, peepSymbolId, type PeepId } from './peepArt'
-
-/** 걷는 사람과 같은 배율 (원본 713 높이 → 37) */
-const K = 37 / 713
-/** 앉은 그림에서 엉덩이 자리 (원본 좌표, 앉은 자세 365×576 기준) */
-const HIP = { x: 150, y: 372 } as const
-/** 벤치 앉는 판 높이 (Greenery.Bench 의 z0 0.13 + 판 0.05) */
-const SEAT_Z = 0.18
+import { PEEP_K, PEEPS, peepSymbolId, seatOf, SIT_HIP, type PeepId } from './peepArt'
 
 /**
  * 벤치에 앉은 사람 하나 (Open Peeps 앉은 자세, CC0).
@@ -16,13 +9,11 @@ const SEAT_Z = 0.18
  */
 export const BenchSitter = memo(function BenchSitter({ x, y, dir, pose }: { x: number; y: number; dir: 'x' | 'y'; pose: PeepId }) {
   const art = PEEPS[pose]
-  const [sx, sy] = dir === 'x' ? iso(x + 0.36, y + 0.13, SEAT_Z) : iso(x + 0.13, y + 0.36, SEAT_Z)
-  const w = art.w * K
-  const h = art.h * K
+  const [sx, sy] = iso(...seatOf(x, y, dir))
   const flip = dir === 'x' ? -1 : 1
   return (
     <g transform={`translate(${sx.toFixed(1)},${sy.toFixed(1)}) scale(${flip},1)`} aria-hidden="true">
-      <use href={`#${peepSymbolId(pose)}`} x={(-HIP.x * K).toFixed(1)} y={(-HIP.y * K).toFixed(1)} width={w.toFixed(1)} height={h.toFixed(1)} />
+      <use href={`#${peepSymbolId(pose)}`} x={(-SIT_HIP.x * PEEP_K).toFixed(1)} y={(-SIT_HIP.y * PEEP_K).toFixed(1)} width={(art.w * PEEP_K).toFixed(1)} height={(art.h * PEEP_K).toFixed(1)} />
     </g>
   )
 })

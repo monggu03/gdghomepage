@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CHAPTER, EVENTS, GENERATIONS, PUBLIC_PROJECTS } from '@/content'
 import type { ScheduleEvent } from '@/domain/types'
-import { mainVenue, mainWeekday, partitionGeneration, stationLabel } from './archive'
+import { mainVenue, mainWeekday, partitionGeneration, stationLabel } from './archiveModel'
 import { countByGeneration, generationPeriod, highlightMentions, sortGenerations, tallies } from './history'
 import { dotDate, pageSources } from './pageSources'
 import { pastEvents } from '../records'

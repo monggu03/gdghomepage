@@ -1,11 +1,10 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { PLACES } from '@/config/places'
 import { depthOfBox } from '@/lib/iso'
 import { Ground } from '@/features/campus/Ground'
 import { GLASS, LIT } from '@/features/campus/roofs/types'
 import { sceneryItems, type SceneItem } from '@/features/campus/scenery'
 import { QUIET_ROOF, StaticBuilding } from '@/features/campus/StaticBuilding'
-import { useWalkers } from '@/features/campus/walkers/useWalkers'
 import { PEEP_DEFS } from '@/features/campus/peeps/peepArt'
 import { Hoarding, Scaffold } from './Construction'
 import { ConstructionCrew } from './ConstructionCrew'
@@ -21,10 +20,8 @@ interface Props {
   look: BuildingLook
   screen?: { date: string; title: string }
   viewBox: string
-  /** 걷는 사람 수 (넓은 화면 2, 좁은 화면 0) */
-  walkers: number
-  /** 움직여도 되는지 ('동작 줄이기'면 false) */
-  animate: boolean
+  /** 서 있는 · 앉은 사람을 그릴지 (넓은 화면만. 좁은 장면에서는 너무 작다) */
+  people: boolean
 }
 
 /**
@@ -32,15 +29,13 @@ interface Props {
  * 지금 페이지의 건물만 장소색, 나머지는 중립색 지붕 (꺼진 건물). 광장 깃발(주황)은 그리지 않는다.
  * 꾸밈이므로 aria-hidden: 제목 · 설명 · 안내판은 바깥 HTML 이 맡는다.
  */
-export function HeroScene({ place, look, screen, viewBox, walkers, animate }: Props) {
-  const worldRef = useRef<SVGGElement>(null)
-  useWalkers(worldRef, walkers, animate)
+export function HeroScene({ place, look, screen, viewBox, people }: Props) {
   const { state, lit } = look
   const date = screen?.date
   const title = screen?.title
 
   const items = useMemo<SceneItem[]>(() => {
-    const list = sceneryItems()
+    const list = sceneryItems(people)
     for (const p of PLACES) {
       const fp = p.footprint
       if (!fp) continue
@@ -72,13 +67,13 @@ export function HeroScene({ place, look, screen, viewBox, walkers, animate }: Pr
       })
     }
     return list.sort((a, b) => a.depth - b.depth)
-  }, [place, state, lit, date, title])
+  }, [place, state, lit, date, title, people])
 
   return (
 <svg className={`${s.scene} campus-iso`} viewBox={viewBox} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
       <defs dangerouslySetInnerHTML={{ __html: PEEP_DEFS }} />
       <Ground />
-      <g ref={worldRef}>
+      <g>
         {items.map((it) => (
           <g key={it.key} data-depth={it.depth.toFixed(2)}>
             {it.node}

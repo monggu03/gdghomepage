@@ -6,7 +6,7 @@ import { useElementWidth } from '@/features/now/useElementWidth'
 import { spokenDate } from '@/lib/rail'
 import { keepHyphenated } from '@/lib/text'
 import { dateLabel } from '../format'
-import { mainWeekday } from './archive'
+import { mainWeekday } from './archiveModel'
 import { academicYear, cellOf, monthColumns, nearestCell, WEEKS, type YearCell, type YearRow } from './heatmap'
 import c from './community.module.css'
 

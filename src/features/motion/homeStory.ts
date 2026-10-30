@@ -13,6 +13,7 @@
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { PLACE_PANEL_ID } from '@/config/ui'
+import { campusWalk } from './campusWalk'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -53,7 +54,8 @@ export function startHomeStory(): () => void {
 function walkIn(wide: boolean) {
   const hero = q('[data-story="hero"]')
   const frame = q('[data-story="map"]')
-  const svg = frame && q<SVGSVGElement>('svg', frame)
+  // SVG 지도 (3D 지도가 있으면 그 밑에 숨어 있다). 3D 층의 손글씨 SVG 와 헷갈리지 않게 class 로 찾는다
+  const svg = frame && q<SVGSVGElement>('svg.campus-iso', frame)
   const sheet = q('#projects')
   if (!hero || !frame || !svg || !sheet) return
   const wash = q('[data-story="wash"]', frame)
@@ -65,8 +67,10 @@ function walkIn(wide: boolean) {
   const others = qa<SVGGElement>('[data-place]:not([data-place="projects"])', svg)
   const otherSigns = qa<SVGGElement>('[data-place-label]:not([data-place-label="projects"])', svg).map((g) => g.parentElement?.parentElement ?? g)
   // 손글씨 메모: 프로젝트 쪽(G-Sprint) 메모만 남기고 나머지는 안내판과 같이 물러난다
-  // (글꼴을 받은 뒤 그려지므로 그때그때 찾는다)
-  const otherPens = () => qa<SVGGElement>('[data-pen]:not([data-pen="sprint"])', svg)
+  // (글꼴을 받은 뒤 그려지고 3D 지도에도 따로 붙으므로 그때그때 지도 틀 전체에서 찾는다)
+  const otherPens = () => qa<SVGGElement>('[data-pen]:not([data-pen="sprint"])', frame)
+  /** 3D 지도가 그려져 있는지: 그러면 카메라 · 건물 물러나기는 3D 가 campusWalk 를 받아 맡는다 */
+  const world3d = () => Boolean(frame.querySelector('[data-world="ready"]'))
 
   /** 카메라 도착 배율 */
   const K = wide ? 1.9 : 2.25
@@ -123,24 +127,29 @@ function walkIn(wide: boolean) {
   // 미리보기가 열려 있는 동안은 카메라를 처음 자리에 둔다 (고른 건물이 보여야 하고, 창이 건물 옆에 붙어 있어야 한다)
   let frozen = false
   const render = (p: number) => {
-    settle()
+    if (!world3d()) settle()
     const e = frozen ? 0 : ease(p)
     const f = frame.getBoundingClientRect()
     const visTop = Math.max(top0, f.top)
     const visBot = Math.min(sheet.getBoundingClientRect().top, f.bottom, innerHeight)
     const ty = Math.max(visBot - visTop, 0) / 2 + visTop - f.top
     const tx = f.width / 2
-    const k = 1 + (K - 1) * e
-    const cx = bx + (tx - bx) * e
-    const cy = by + (ty - by) * e
-    svg.style.transformOrigin = '0 0'
-    svg.style.transform = e === 0 ? '' : `translate(${(cx - k * bx).toFixed(1)}px, ${(cy - k * by).toFixed(1)}px) scale(${k.toFixed(4)})`
-    const back = Math.min(1, e * 1.25)
-    for (const g of others) {
-      g.style.opacity = String(1 - 0.7 * back)
-      g.style.filter = back > 0 ? `grayscale(${back.toFixed(2)})` : ''
+    // 3D 지도에 알린다 (3D 는 카메라를 돌려 걸어 들어가고, 나머지 건물 · 안내판을 물린다)
+    campusWalk.set({ e, tx, ty, k: K })
+    if (!world3d()) {
+      const k = 1 + (K - 1) * e
+      const cx = bx + (tx - bx) * e
+      const cy = by + (ty - by) * e
+      svg.style.transformOrigin = '0 0'
+      svg.style.transform = e === 0 ? '' : `translate(${(cx - k * bx).toFixed(1)}px, ${(cy - k * by).toFixed(1)}px) scale(${k.toFixed(4)})`
+      const back = Math.min(1, e * 1.25)
+      for (const g of others) {
+        g.style.opacity = String(1 - 0.7 * back)
+        g.style.filter = back > 0 ? `grayscale(${back.toFixed(2)})` : ''
+      }
+      for (const g of otherSigns) g.style.opacity = String(1 - Math.min(1, e * 1.6))
     }
-    for (const g of [...otherSigns, ...otherPens()]) g.style.opacity = String(1 - Math.min(1, e * 1.6))
+    for (const g of otherPens()) g.style.opacity = String(1 - Math.min(1, e * 1.6))
     if (wash) wash.style.opacity = String(1 - Math.min(1, e * 1.8))
     if (panel) panel.style.opacity = String(1 - Math.min(1, e * 1.7))
     frame.toggleAttribute('data-arrive', e > 0.92)
@@ -207,6 +216,7 @@ function walkIn(wide: boolean) {
     if (wash) wash.style.opacity = ''
     if (panel) panel.style.opacity = ''
     frame.removeAttribute('data-arrive')
+    campusWalk.set({ e: 0, tx: 0, ty: 0, k: 1 })
   }
 }
 
