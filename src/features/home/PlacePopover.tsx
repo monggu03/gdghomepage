@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { PLACE_BY_ID, placeColor } from '@/config/places'
 import { ABOUT_FACTS } from '@/config/site'
@@ -167,10 +168,13 @@ export function PlacePopover({ frameRef, sheet }: Props) {
     const svg = frame.querySelector('svg')
     const mo = svg ? new MutationObserver(queue) : null
     if (svg) mo?.observe(svg, { attributes: true, attributeFilter: ['viewBox'] })
+    // 스크롤 이야기(motion/homeStory)가 카메라를 옮기면 다시 잡는다
+    window.addEventListener('campus-camera', queue)
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
       mo?.disconnect()
+      window.removeEventListener('campus-camera', queue)
     }
   }, [open, sheet, selected, frameRef])
 
@@ -216,7 +220,7 @@ export function PlacePopover({ frameRef, sheet }: Props) {
   const about = selected === 'about'
   const style = !sheet && pos ? { left: pos.left, top: pos.top } : undefined
 
-  return (
+  const panel = (
     <div
       id={PLACE_PANEL_ID}
       ref={panelRef}
@@ -268,4 +272,6 @@ export function PlacePopover({ frameRef, sheet }: Props) {
       </div>
     </div>
   )
+  // 폰 시트는 문서 맨 끝에 붙인다: 첫 화면(isolation: isolate) 안에 두면 아래 섹션 글자가 시트 위로 올라온다
+  return sheet ? createPortal(panel, document.body) : panel
 }

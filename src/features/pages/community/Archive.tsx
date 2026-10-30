@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CHAPTER } from '@/content'
 import type { TermId } from '@/content/glossary'
@@ -34,6 +35,8 @@ export function Archive({
   explained?: ReadonlySet<TermId>
 }) {
   const [params, setParams] = useSearchParams()
+  // 기수를 바꾸면 기록이 버튼이 움직인 쪽에서 들어온다 (오른쪽 칸 = 옛 기수 → 오른쪽에서). 처음 열 때는 움직이지 않는다
+  const [dir, setDir] = useState<1 | -1 | null>(null)
   const order = [...gens].sort((a, b) => b.n - a.n)
   const counts = countByGeneration(past)
   const fallback = order.find((g) => g.current) ?? order[0]
@@ -63,6 +66,9 @@ export function Archive({
   const range = generationRange(info)
 
   const choose = (v: string) => {
+    const from = order.findIndex((g) => g.n === info?.n)
+    const to = order.findIndex((g) => String(g.n) === v)
+    if (from >= 0 && to >= 0 && from !== to) setDir(to > from ? 1 : -1)
     const next = new URLSearchParams(params)
     if (Number(v) === fallback?.n) next.delete('gen')
     else next.set('gen', v)
@@ -78,6 +84,7 @@ export function Archive({
         options={order.map((g) => ({ id: String(g.n), label: `${g.n}기`, count: counts.get(g.n) ?? 0 }))}
       />
       <div className={c.genPanel} id="archive" aria-live="polite">
+        <div key={info.n} className={c.genSlide} data-dir={dir === null ? undefined : dir > 0 ? 'next' : 'prev'}>
         <div className={c.genIntro}>
           <h3 className={c.genTitle}>
             {info.current ? <span className="gen-tag">{info.n}기</span> : <span className="num">{info.n}기</span>}
@@ -115,6 +122,7 @@ export function Archive({
             ))}
           </ul>
         )}
+        </div>
       </div>
     </div>
   )

@@ -10,8 +10,13 @@ const STEP_SECONDS = 1 / 30 - 0.002
  * 이 훅은 만들고(마운트) · 매 프레임 움직이고 · 치우는(언마운트) 시점만 잡는다.
  * 정적 장면은 처음 그린 뒤 순서가 바뀌지 않으므로, 끼워 넣은 노드와 React 가 부딪히지 않는다.
  */
-export function useWalkers(worldRef: RefObject<SVGGElement | null>, count: number, animate: boolean) {
+export function useWalkers(worldRef: RefObject<SVGGElement | null>, count: number, animate: boolean, focusX: number | null = null) {
   const layerRef = useRef<WalkerLayer | null>(null)
+
+  // 건물에 마우스를 올리면 사람들이 그쪽을 돌아본다 (화면 x 하나만 넘긴다)
+  useEffect(() => {
+    layerRef.current?.setFocus(focusX)
+  }, [focusX])
 
   useEffect(() => {
     const world = worldRef.current

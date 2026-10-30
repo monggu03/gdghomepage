@@ -30,7 +30,8 @@ export interface RoofSpec {
  * 유리 색. 장소색을 섞지 않은 차분한 회청색 한 벌.
  * 빛이 왼쪽 위에서 오므로 왼쪽 면(L) 유리가 밝고 오른쪽 면(R) 유리가 어둡다.
  */
-export const GLASS = { L: '#d6e0ea', R: '#bccad8' } as const
+/** 꺼진 창 유리. 밤에는 anatomy.css 의 [data-tod='night'] 가 어두운 값으로 바꾼다 (CSS 변수) */
+export const GLASS = { L: 'var(--c-glass-l)', R: 'var(--c-glass-r)' } as const
 
 /** 불 켜진 창 (깜빡이지 않는다) */
 export const LIT = { L: '#ffe4a6', R: '#f7d48a' } as const

@@ -1,4 +1,4 @@
-import { useId, type CSSProperties, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import s from './pages.module.css'
 
 /**
@@ -130,9 +130,29 @@ export interface ToggleOption<T extends string> {
   count?: number
 }
 
+/** 칸 하나의 글자 (진짜 버튼과 먹색 판 위 흰 글자 사본이 같은 모양을 쓴다) */
+function SegText({ label, count, spoken }: { label: ReactNode; count?: number; spoken: boolean }) {
+  return (
+    <>
+      {label}
+      {count !== undefined && (
+        <span className={`${s.count} num`}>
+          {spoken && <span className="visually-hidden"> </span>}
+          {count}
+          {spoken && <span className="visually-hidden">건</span>}
+        </span>
+      )}
+    </>
+  )
+}
+
 /**
  * 거르기 버튼 묶음 (기수 · 종류 · 연도 모두 같은 모양). 누른 상태는 aria-pressed 로 알린다.
  * 붙어 있는 칸 하나짜리 조작부이고, 칸마다 높이 44 이상. 폰에서 넘치면 가로로 밀어 본다.
+ *
+ * 누른 칸 표시(먹색 판)는 다른 칸을 누르면 그 칸으로 미끄러진다 (200ms, 머리말 메뉴 밑줄과 같은 '지금 여기' 움직임).
+ * 먹색 판 = 흰 글자 사본 한 줄을 누른 칸 크기로 잘라 보이는 것 (clip-path). 그래서 판이 지나가는 동안에도 글자 색이 칸마다 맞다.
+ * 칸 위치는 글꼴이 늦게 와도 맞도록 ResizeObserver 로 다시 잰다. '동작 줄이기'면 바로 옮겨 간다 (CSS).
  */
 export function ToggleGroup<T extends string>({
   label,
@@ -146,25 +166,57 @@ export function ToggleGroup<T extends string>({
   onChange: (v: T) => void
 }) {
   const labelId = useId()
+  const groupRef = useRef<HTMLDivElement>(null)
+  const [clip, setClip] = useState<{ l: number; r: number } | null>(null)
+  const [ready, setReady] = useState(false)
+
+  useLayoutEffect(() => {
+    const g = groupRef.current
+    if (!g) return
+    const measure = () => {
+      const b = g.querySelector<HTMLElement>('button[aria-pressed="true"]')
+      if (!b) return setClip(null)
+      setClip({ l: b.offsetLeft, r: g.clientWidth - b.offsetLeft - b.offsetWidth })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(g)
+    return () => ro.disconnect()
+  }, [value, options])
+
+  // 처음 자리를 잡은 다음 프레임부터 미끄러짐을 켠다 (페이지가 열릴 때 판이 0에서 날아오지 않게)
+  useLayoutEffect(() => {
+    if (!clip || ready) return
+    const id = requestAnimationFrame(() => setReady(true))
+    return () => cancelAnimationFrame(id)
+  }, [clip, ready])
+
   return (
     <div className={s.filterRow}>
       <span className={s.filterLabel} id={labelId}>
         {label}
       </span>
       <div className={s.scroller}>
-        <div role="group" aria-labelledby={labelId} className={s.segmented}>
+        <div ref={groupRef} role="group" aria-labelledby={labelId} className={s.segmented} data-slide={clip ? '' : undefined}>
           {options.map((o) => (
             <button key={o.id} type="button" aria-pressed={o.id === value} onClick={() => onChange(o.id)}>
-              {o.label}
-              {o.count !== undefined && (
-                <span className={`${s.count} num`}>
-                  <span className="visually-hidden"> </span>
-                  {o.count}
-                  <span className="visually-hidden">건</span>
-                </span>
-              )}
+              <SegText label={o.label} count={o.count} spoken />
             </button>
           ))}
+          {clip && (
+            <div
+              className={s.segInk}
+              aria-hidden="true"
+              data-ready={ready || undefined}
+              style={{ clipPath: `inset(0 ${clip.r}px 0 ${clip.l}px)` }}
+            >
+              {options.map((o) => (
+                <span key={o.id} className={s.segInkItem}>
+                  <SegText label={o.label} count={o.count} spoken={false} />
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -27,6 +27,10 @@
 .sheet::backdrop {
   background: rgba(25, 27, 31, 0.44);
 }
+/* 작품에서 이어 열릴 때(sheetMorph)는 View Transition 이 열림을 그리므로 창 자체의 떠오름은 끈다 */
+:global(html[data-vt^='sheet']) .sheet[open] {
+  animation: none;
+}
 @keyframes sheetIn {
   from {
     opacity: 0;

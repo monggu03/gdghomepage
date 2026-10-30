@@ -9,6 +9,7 @@ import { ExhibitCard, WorkList } from '@/features/pages/projects/ExhibitCard'
 import { assetUrl, projectGallery } from '@/features/pages/projects/exhibit'
 import { sheetSearch } from '@/features/pages/projects/sheetLink'
 import { fill, pickProjects, projectCounts, projectMeta, restProjects, tileShots } from './homeData'
+import { RoughMark } from '@/features/common/RoughMark'
 import s from './projects.module.css'
 
 const BIG = 2
@@ -17,8 +18,9 @@ const REST_ID = 'home-rest-projects'
 /** GitHub 조직 이름 ('https://github.com/GDSC-DGU' → 'GDSC-DGU') */
 const ORG = CHAPTER.github.replace(/\/+$/, '').split('/').pop() ?? 'GDSC-DGU'
 
-function Shot({ img, className }: { img: ProjectImage; className: string }) {
-  return <img className={className} src={assetUrl(img.src)} alt={img.alt} width={img.width} height={img.height} loading="lazy" decoding="async" />
+/** float: 큰 타일의 겹친 폰 화면 (스크롤할 때 조금 빨리 움직인다, motion/homeStory) */
+function Shot({ img, className, float }: { img: ProjectImage; className: string; float?: boolean }) {
+  return <img className={className} src={assetUrl(img.src)} alt={img.alt} width={img.width} height={img.height} loading="lazy" decoding="async" data-float={float ? '' : undefined} />
 }
 
 /**
@@ -32,7 +34,7 @@ function BigTile({ p }: { p: Project }) {
     <li className={s.tile}>
       <div className={`${s.media} ${phone ? s.duo : ''}`}>
         {wide && <Shot img={wide} className={phone ? s.desk : s.cover} />}
-        {phone && <Shot img={phone} className={s.phone} />}
+        {phone && <Shot img={phone} className={s.phone} float />}
       </div>
       <div className={s.label}>
         <div className={s.titleRow}>
@@ -69,8 +71,11 @@ function withNum(template: string, n: number) {
   return (
     <Fragment>
       {before}
-      <span className="num">{n}</span>
-      {after}
+      {/* 손으로 두른 동그라미 (Rough Notation): 이 섹션의 주장 숫자 하나에만 */}
+      <RoughMark type="circle" color="var(--place-projects)" padding={[2, 7]}>
+        <span className="num">{n}</span>
+        {after}
+      </RoughMark>
     </Fragment>
   )
 }

@@ -186,3 +186,19 @@
     height: 300px;
   }
 }
+
+/* ── 밤: 첫 블록 바탕 · 지도 위아래 흐림 · 글자 판 덮개를 밤 바탕색으로. 글자 판은 .on-dark ── */
+.hero[data-tod='night'] {
+  background: #15191f;
+}
+.hero[data-tod='night'] .map::before {
+  background: linear-gradient(#15191f, rgba(21, 25, 31, 0));
+}
+.hero[data-tod='night'] .map::after {
+  background: linear-gradient(rgba(21, 25, 31, 0), #15191f);
+}
+@media (min-width: 1024px) {
+  .hero[data-tod='night'] .wash {
+    background: linear-gradient(to right, rgba(21, 25, 31, 0), #15191f 72px);
+  }
+}

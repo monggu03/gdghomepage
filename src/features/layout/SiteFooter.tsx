@@ -146,6 +146,7 @@ export function SiteFooter() {
         <div className={s.footerNotes}>
           <p>{SITE.shortName}는 동국대학교 학생이 운영하는 Google Developer Groups on Campus 챕터입니다. Google이 운영하거나 보증하는 단체가 아닙니다.</p>
           <p>이 홈페이지는 4기 G-Sprint 팀이 만들고 있습니다.</p>
+          <p>그림 속 사람: Open Peeps (Pablo Stanley, CC0) · 지도 메모 글씨: 나눔손글씨 펜 (OFL)</p>
         </div>
 
         <div className={s.footerBottom}>

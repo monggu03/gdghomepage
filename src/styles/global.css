@@ -543,6 +543,80 @@ html[data-vt='back']::view-transition-new(root) {
   animation-duration: var(--dur-open);
 }
 
+/*
+ * 작품 → 자세히 보기 창 (features/pages/projects/sheetMorph.ts, 넓은 화면만).
+ * 누른 작품의 그림(sheet-media) 또는 작품 상자(sheet-box)가 창의 그 자리로 옮겨 가며 커지고, 닫으면 제자리로 돌아간다.
+ * 나머지 화면(어두운 바탕 · 창의 글자)은 새 화면을 위에 겹쳐 서서히 드러낸다 (옛 화면은 그대로 둠 → 페이지가 깜빡이지 않음).
+ * 320ms 열림 · 닫힘은 더 빠르게 · 튕김 없음 (DESIGN 6장).
+ */
+html[data-vt^='sheet']::view-transition-old(root) {
+  animation: none;
+}
+html[data-vt='sheet-open']::view-transition-new(root) {
+  animation: vt-in var(--dur-sheet) var(--ease) both;
+}
+html[data-vt='sheet-close']::view-transition-new(root) {
+  animation: vt-in 200ms var(--ease) both;
+}
+::view-transition-group(sheet-media),
+::view-transition-group(sheet-box) {
+  animation-duration: var(--dur-sheet);
+  animation-timing-function: var(--ease);
+}
+html[data-vt='sheet-close']::view-transition-group(sheet-media),
+html[data-vt='sheet-close']::view-transition-group(sheet-box) {
+  animation-duration: 260ms;
+}
+/* 그림: 무대(겹친 두 화면)와 창의 첫 그림이 겹쳐 바뀐다. 틀을 꽉 채워 늘어나 보이지 않게 위쪽 기준으로 자른다.
+ * 옛 화면에만 있던 이름이 먼저 줄을 서므로(창 판보다 아래에 깔림) 쌓는 순서를 직접 정한다 */
+::view-transition-group(sheet-media) {
+  z-index: 2;
+  overflow: clip;
+  border-radius: var(--r-media);
+}
+::view-transition-old(sheet-media),
+::view-transition-new(sheet-media) {
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+/* 창 판: 그림이 날아가 앉을 자리. 짧게 나타나고(열림) 짧게 사라진다(닫힘) */
+::view-transition-group(sheet-panel) {
+  z-index: 1;
+}
+::view-transition-new(sheet-panel) {
+  animation: vt-in 140ms var(--ease) both;
+}
+::view-transition-old(sheet-panel) {
+  animation: vt-out 120ms var(--ease) both;
+}
+/* 상자: 작품 줄이 흰 판으로 커져 창이 된다. 앞 그림(줄)은 빨리 지우고 창 글자는 조금 늦게 */
+::view-transition-group(sheet-box) {
+  z-index: 2;
+  overflow: clip;
+  border-radius: var(--r-media);
+  background: var(--paper);
+  box-shadow: var(--shadow-float);
+}
+/* 두 그림 모두 제 크기 그대로 왼쪽 위에 붙인다: 판이 커지는 동안 줄 글자가 부풀지 않고, 창은 판 크기만큼 드러난다 */
+::view-transition-old(sheet-box),
+::view-transition-new(sheet-box) {
+  width: auto;
+  height: auto;
+}
+::view-transition-old(sheet-box) {
+  animation: vt-out 100ms var(--ease) both;
+}
+::view-transition-new(sheet-box) {
+  animation: vt-in 200ms var(--ease) 100ms both;
+}
+html[data-vt='sheet-close']::view-transition-old(sheet-box) {
+  animation: vt-out 120ms var(--ease) both;
+}
+html[data-vt='sheet-close']::view-transition-new(sheet-box) {
+  animation: vt-in 140ms var(--ease) 100ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

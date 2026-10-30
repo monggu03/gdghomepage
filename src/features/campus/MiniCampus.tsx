@@ -55,7 +55,7 @@ export const MiniCampus = memo(function MiniCampus({ here, className = '' }: { h
     return list.sort((a, b) => a.depth - b.depth)
   }, [here])
   return (
-    <svg className={className} viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} aria-hidden="true" focusable="false">
+    <svg className={`campus-iso ${className}`} viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} aria-hidden="true" focusable="false">
       <Ground />
       {items.map((it) => (
         <g key={it.key}>{it.node}</g>
